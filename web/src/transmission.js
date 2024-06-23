@@ -194,7 +194,8 @@ export class Transmission extends EventTarget {
     e = document.querySelector('#turtle');
     e.addEventListener('click', (event_) => {
       this.remote.savePrefs({
-        [RPC._TurtleState]: !event_.target.classList.contains('alt-speed-enabled'),
+        [RPC._TurtleState]:
+          !event_.target.classList.contains('alt-speed-enabled'),
       });
     });
 

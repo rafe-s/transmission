@@ -288,6 +288,7 @@ a {
   &.alt-speed-enabled {
     background-color: var(--color-bg-selected);
   }
+
   &.alt-speed-enabled::before {
     filter: hue-rotate(120deg) saturate(180%);
   }

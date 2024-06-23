@@ -191,6 +191,13 @@ export class Transmission extends EventTarget {
       this.refilterAllSoon();
     });
 
+    e = document.querySelector('#turtle');
+    e.addEventListener('click', (event_) => {
+      this.remote.savePrefs({
+        [RPC._TurtleState]: !event_.target.classList.contains('alt-speed-enabled'),
+      });
+    });
+
     document.addEventListener('keydown', this._keyDown.bind(this));
     document.addEventListener('keyup', this._keyUp.bind(this));
     e = document.querySelector('#torrent-container');
@@ -926,7 +933,9 @@ TODO: fix this when notifications get fixed
       version,
     };
 
-    const element = document.querySelector('#toolbar-overflow');
+    let element = document.querySelector('#turtle');
+    element.classList.toggle('alt-speed-enabled', o[RPC._TurtleState]);
+    element = document.querySelector('#toolbar-overflow');
     element.classList.toggle('alt-speed-enabled', o[RPC._TurtleState]);
   }
 

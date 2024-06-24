@@ -934,9 +934,7 @@ TODO: fix this when notifications get fixed
       version,
     };
 
-    let element = document.querySelector('#turtle');
-    element.classList.toggle('alt-speed-enabled', o[RPC._TurtleState]);
-    element = document.querySelector('#toolbar-overflow');
+    const element = document.querySelector('#turtle');
     element.classList.toggle('alt-speed-enabled', o[RPC._TurtleState]);
   }
 

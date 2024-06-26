@@ -364,9 +364,9 @@ export class Transmission extends EventTarget {
       }, 250);
       e.classList.remove(blur_token);
     });
-    e.addEventListener('keydown', (k) => {
+    e.addEventListener('input', () => {
       if (e.value.trim() !== this.filterText) {
-        this._setFilterText(e.value, k.key);
+        this._setFilterText(e.value);
       }
     });
   }
@@ -701,7 +701,7 @@ export class Transmission extends EventTarget {
     }
   }
 
-  _setFilterText(search, key = 'Enter') {
+  _setFilterText(search) {
     clearTimeout(this.busytyping);
     this.busytyping = setTimeout(
       () => {
@@ -709,7 +709,7 @@ export class Transmission extends EventTarget {
         this.filterText = search ? search.trim() : '';
         this.refilterAllSoon();
       },
-      key === 'Enter' || !search ? 0 : 250,
+      search ? 250 : 0,
     );
   }
 

@@ -376,6 +376,10 @@ a {
     min-width: 140px;
     max-width: 226px;
     padding-right: 24px; /* accommodate reset button */
+
+    &::-webkit-search-cancel-button {
+      display: none;    
+    }
   }
 
   #reset {

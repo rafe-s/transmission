@@ -192,13 +192,19 @@ export class Transmission extends EventTarget {
       this.refilterAllSoon();
     });
 
+    const s = document.querySelector('#torrent-search');
     e = document.querySelector('#reset');
     e.addEventListener('click', () => {
-      const s = document.querySelector('#torrent-search');
       s.value = '';
       this._setFilterText(s.value);
       this.refilterAllSoon();
     });
+
+    if (s.value) {
+      this.filterText = s.value;
+      e.style.display = 'block';
+      this.refilterAllSoon();
+    }
 
     document.addEventListener('keydown', this._keyDown.bind(this));
     document.addEventListener('keyup', this._keyUp.bind(this));
@@ -350,20 +356,9 @@ export class Transmission extends EventTarget {
   _setupSearchBox() {
     const e = document.querySelector('#torrent-search');
     const blur_token = 'blur';
-    let dropdown_listener = false;
     e.classList.add(blur_token);
-    e.addEventListener('blur', () => {
-      clearInterval(dropdown_listener);
-      e.classList.add(blur_token);
-    });
-    e.addEventListener('focus', () => {
-      dropdown_listener = setInterval(() => {
-        if (!this.busytyping && e.value.trim() !== this.filterText) {
-          this._setFilterText(e.value);
-        }
-      }, 250);
-      e.classList.remove(blur_token);
-    });
+    e.addEventListener('blur', () => e.classList.add(blur_token));
+    e.addEventListener('focus', () => e.classList.remove(blur_token));
     e.addEventListener('input', () => {
       if (e.value.trim() !== this.filterText) {
         this._setFilterText(e.value);

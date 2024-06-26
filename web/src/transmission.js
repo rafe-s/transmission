@@ -366,7 +366,7 @@ export class Transmission extends EventTarget {
     });
     e.addEventListener('keydown', (k) => {
       if (e.value.trim() !== this.filterText) {
-        this._setFilterText(e.value, k.keyCode);
+        this._setFilterText(e.value, k.key);
       }
     });
   }
@@ -701,13 +701,13 @@ export class Transmission extends EventTarget {
     }
   }
 
-  _setFilterText(search, keycode=13) {
+  _setFilterText(search, key="Enter") {
     clearTimeout(this.busytyping);
     this.busytyping = setTimeout(() => {
       this.busytyping = false;
       this.filterText = search ? search.trim() : '';
       this.refilterAllSoon();
-    }, keycode === 13 || !search ? 0 : 250);
+    }, key === "Enter" || !search ? 0 : 250);
   }
 
   _onTorrentChanged(event_) {

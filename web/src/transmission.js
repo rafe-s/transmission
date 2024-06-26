@@ -193,7 +193,7 @@ export class Transmission extends EventTarget {
     });
 
     e = document.querySelector('#reset');
-    e.addEventListener('click', (event_) => {
+    e.addEventListener('click', () => {
       const s = document.querySelector('#torrent-search');
       s.value = '';
       this._setFilterText(s.value);
@@ -350,7 +350,7 @@ export class Transmission extends EventTarget {
   _setupSearchBox() {
     const e = document.querySelector('#torrent-search');
     const blur_token = 'blur';
-    let dropdown_listener;
+    let dropdown_listener = false;
     e.classList.add(blur_token);
     e.addEventListener('blur', () => {
       clearInterval(dropdown_listener);
@@ -358,15 +358,15 @@ export class Transmission extends EventTarget {
     });
     e.addEventListener('focus', () => {
       dropdown_listener = setInterval(() => {
-        if (!this.busytyping && e.value.trim() != this.filterText) {
+        if (!this.busytyping && e.value.trim() !== this.filterText) {
           this._setFilterText(e.value);
         }
       }, 250);
       e.classList.remove(blur_token);
     });
-    e.addEventListener('input', (k) => {
-      if (e.value.trim() != this.filterText) {
-        this._setFilterText(e.value, k.which);
+    e.addEventListener('keydown', (k) => {
+      if (e.value.trim() !== this.filterText) {
+        this._setFilterText(e.value, k.keyCode);
       }
     });
   }
@@ -707,7 +707,7 @@ export class Transmission extends EventTarget {
       this.busytyping = false;
       this.filterText = search ? search.trim() : '';
       this.refilterAllSoon();
-    }, keycode==13 ? 0 : (search ? 250 : 0));
+    }, keycode === 13 || !search ? 0 : 250);
   }
 
   _onTorrentChanged(event_) {

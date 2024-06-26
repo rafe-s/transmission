@@ -701,7 +701,7 @@ export class Transmission extends EventTarget {
     }
   }
 
-  _setFilterText(search, key = "Enter") {
+  _setFilterText(search, key = 'Enter') {
     clearTimeout(this.busytyping);
     this.busytyping = setTimeout(
       () => {
@@ -709,7 +709,7 @@ export class Transmission extends EventTarget {
         this.filterText = search ? search.trim() : '';
         this.refilterAllSoon();
       },
-      key === "Enter" || !search ? 0 : 250,
+      key === 'Enter' || !search ? 0 : 250,
     );
   }
 

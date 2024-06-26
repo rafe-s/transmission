@@ -701,13 +701,16 @@ export class Transmission extends EventTarget {
     }
   }
 
-  _setFilterText(search, key="Enter") {
+  _setFilterText(search, key = "Enter") {
     clearTimeout(this.busytyping);
-    this.busytyping = setTimeout(() => {
-      this.busytyping = false;
-      this.filterText = search ? search.trim() : '';
-      this.refilterAllSoon();
-    }, key === "Enter" || !search ? 0 : 250);
+    this.busytyping = setTimeout(
+      () => {
+        this.busytyping = false;
+        this.filterText = search ? search.trim() : '';
+        this.refilterAllSoon();
+      },
+      key === "Enter" || !search ? 0 : 250,
+    );
   }
 
   _onTorrentChanged(event_) {
@@ -1035,8 +1038,8 @@ TODO: fix this when notifications get fixed
     let filter_text = '';
     let labels = [];
     const reset_button = document.querySelector('#reset');
-    if (this.filterText.length) {
-      reset_button.style.display = "block";
+    if (this.filterText.length > 0) {
+      reset_button.style.display = 'block';
       const m = /^labels:([\w,-\s]*)(.*)$/.exec(this.filterText);
       if (m) {
         filter_text = m[2].trim();
@@ -1045,7 +1048,7 @@ TODO: fix this when notifications get fixed
         filter_text = this.filterText;
       }
     } else {
-      reset_button.style.display = "none";
+      reset_button.style.display = 'none';
     }
 
     const countRows = () => [...list.children].length;

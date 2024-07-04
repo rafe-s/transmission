@@ -1030,11 +1030,13 @@ TODO: fix this when notifications get fixed
     const renderer = this.torrentRenderer;
     const list = this.elements.torrent_list;
 
+    document.querySelector('#reset').style.display = this.filterText.length > 0
+      ? 'block'
+      : 'none';
+
     let filter_text = '';
     let labels = [];
-    const reset_button = document.querySelector('#reset');
     if (this.filterText.length > 0) {
-      reset_button.style.display = 'block';
       const m = /^labels:([\w,-\s]*)(.*)$/.exec(this.filterText);
       if (m) {
         filter_text = m[2].trim();
@@ -1042,8 +1044,6 @@ TODO: fix this when notifications get fixed
       } else {
         filter_text = this.filterText;
       }
-    } else {
-      reset_button.style.display = 'none';
     }
 
     const countRows = () => [...list.children].length;

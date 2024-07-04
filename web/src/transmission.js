@@ -1030,9 +1030,8 @@ TODO: fix this when notifications get fixed
     const renderer = this.torrentRenderer;
     const list = this.elements.torrent_list;
 
-    document.querySelector('#reset').style.display = this.filterText.length > 0
-      ? 'block'
-      : 'none';
+    document.querySelector('#reset').style.display =
+      this.filterText.length > 0 ? 'block' : 'none';
 
     let filter_text = '';
     let labels = [];

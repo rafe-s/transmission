@@ -1033,16 +1033,15 @@ TODO: fix this when notifications get fixed
     document.querySelector('#reset').style.display =
       this.filterText.length > 0 ? 'block' : 'none';
 
-    let filter_text = '';
-    let labels = [];
-    if (this.filterText.length > 0) {
-      const m = /^labels:([\w,-\s]*)(.*)$/.exec(this.filterText);
-      if (m) {
-        filter_text = m[2].trim();
-        labels = m[1].split(',');
-      } else {
-        filter_text = this.filterText;
-      }
+    let filter_text = null;
+    let labels = null;
+    const m = /^labels:([\w,-\s]*)(.*)$/.exec(this.filterText);
+    if (m) {
+      filter_text = m[2].trim();
+      labels = m[1].split(',');
+    } else {
+      filter_text = this.filterText;
+      labels = [];
     }
 
     const countRows = () => [...list.children].length;

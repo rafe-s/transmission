@@ -1052,20 +1052,18 @@ TODO: fix this when notifications get fixed
     const renderer = this.torrentRenderer;
     const list = this.elements.torrent_list;
 
-    let filter_text = '';
-    let labels = [];
-    const reset_button = document.querySelector('#reset');
-    if (this.filterText.length > 0) {
-      reset_button.style.display = 'block';
-      const m = /^labels:([\w,-\s]*)(.*)$/.exec(this.filterText);
-      if (m) {
-        filter_text = m[2].trim();
-        labels = m[1].split(',');
-      } else {
-        filter_text = this.filterText;
-      }
+    document.querySelector('#reset').style.display =
+      this.filterText.length > 0 ? 'block' : 'none';
+
+    let filter_text = null;
+    let labels = null;
+    const m = /^labels:([\w,-\s]*)(.*)$/.exec(this.filterText);
+    if (m) {
+      filter_text = m[2].trim();
+      labels = m[1].split(',');
     } else {
-      reset_button.style.display = 'none';
+      filter_text = this.filterText;
+      labels = [];
     }
 
     const countRows = () => [...list.children].length;

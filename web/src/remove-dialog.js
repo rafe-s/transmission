@@ -47,11 +47,10 @@ export class RemoveDialog extends EventTarget {
     const elements = createDialogContainer('remove-dialog');
     const { confirm, heading, message, workarea } = elements;
 
-    if (torrents.length === 1) {
-      heading.textContent = `Remove ${torrents[0].getName()}?`;
-    } else {
-      heading.textContent = `Remove ${torrents.length} transfers?`;
-    }
+    heading.textContent = 
+      torrents.length === 1
+        ? `Remove ${torrents[0].getName()}?`
+        : `Remove ${torrents.length} transfers?`;
 
     const check = document.createElement('input');
     check.id = 'delete-local-data-check';
@@ -74,14 +73,14 @@ export class RemoveDialog extends EventTarget {
         e.textContent =
           'All data downloaded for these torrents will be deleted. Are you sure you want to remove them?';
       } else if (torrents.length === 1) {
-        e.textContent = 
+        e.textContent =
           'Once removed, continuing the transfer will require the torrent file. Are you sure you want to remove it?';
       } else {
         e.textContent =
           'Once removed, continuing the transfers will require the torrent files. Are you sure you want to remove them?';
       }
       confirm.textContent = c ? 'Delete' : 'Remove';
-    }
+    };
     rewrite(check.checked);
     check.addEventListener('click', () => {
       options.trash = check.checked;

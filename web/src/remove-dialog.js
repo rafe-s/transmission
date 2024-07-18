@@ -47,7 +47,7 @@ export class RemoveDialog extends EventTarget {
     const elements = createDialogContainer('remove-dialog');
     const { confirm, heading, message, workarea } = elements;
 
-    heading.textContent = 
+    heading.textContent =
       torrents.length === 1
         ? `Remove ${torrents[0].getName()}?`
         : `Remove ${torrents.length} transfers?`;

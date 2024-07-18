@@ -43,7 +43,7 @@ export class RemoveDialog extends EventTarget {
   }
 
   static _create(options) {
-    const { torrents } = options;
+    const { torrents, trash } = options;
     const elements = createDialogContainer('remove-dialog');
     const { confirm, heading, message, workarea } = elements;
 
@@ -56,7 +56,7 @@ export class RemoveDialog extends EventTarget {
     const check = document.createElement('input');
     check.id = 'delete-local-data-check';
     check.type = 'checkbox';
-    check.checked = options.trash;
+    check.checked = trash;
     message.append(check);
 
     const label = document.createElement('label');
@@ -66,11 +66,11 @@ export class RemoveDialog extends EventTarget {
     message.append(label);
 
     const e = document.createElement('div');
-    const rewrite = () => {
-      if (options.trash && torrents.length === 1) {
+    const rewrite = (c) => {
+      if (c && torrents.length === 1) {
         e.textContent =
           'All data downloaded for this torrent will be deleted. Are you sure you want to remove it?';
-      } else if (options.trash) {
+      } else if (c) {
         e.textContent =
           'All data downloaded for these torrents will be deleted. Are you sure you want to remove them?';
       } else if (torrents.length === 1) {
@@ -80,12 +80,12 @@ export class RemoveDialog extends EventTarget {
         e.textContent =
           'Once removed, continuing the transfers will require the torrent files. Are you sure you want to remove them?';
       }
-      confirm.textContent = options.trash ? 'Delete' : 'Remove';
+      confirm.textContent = c ? 'Delete' : 'Remove';
     }
-    rewrite();
+    rewrite(check.checked);
     check.addEventListener('click', () => {
       options.trash = check.checked;
-      rewrite();
+      rewrite(check.checked);
     });
     workarea.append(e);
     return elements;

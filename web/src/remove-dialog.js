@@ -43,38 +43,51 @@ export class RemoveDialog extends EventTarget {
   }
 
   static _create(options) {
-    const { trash } = options;
-    const { heading, message } = RemoveDialog._createMessage(options);
-
+    const { torrents } = options;
     const elements = createDialogContainer('remove-dialog');
-    elements.heading.textContent = heading;
-    elements.message.textContent = message;
-    elements.confirm.textContent = trash ? 'Trash' : 'Remove';
-    return elements;
-  }
+    const { confirm, heading, message, workarea } = elements;
 
-  static _createMessage(options) {
-    let heading = null;
-    let message = null;
-    const { torrents, trash } = options;
-    const [torrent] = torrents;
-    if (trash && torrents.length === 1) {
-      heading = `Remove ${torrent.getName()} and delete data?`;
-      message =
-        'All data downloaded for this torrent will be deleted. Are you sure you want to remove it?';
-    } else if (trash) {
-      heading = `Remove ${torrents.length} transfers and delete data?`;
-      message =
-        'All data downloaded for these torrents will be deleted. Are you sure you want to remove them?';
-    } else if (torrents.length === 1) {
-      heading = `Remove ${torrent.getName()}?`;
-      message =
-        'Once removed, continuing the transfer will require the torrent file. Are you sure you want to remove it?';
+    if (torrents.length === 1) {
+      heading.textContent = `Remove ${torrents[0].getName()}?`;
     } else {
-      heading = `Remove ${torrents.length} transfers?`;
-      message =
-        'Once removed, continuing the transfers will require the torrent files. Are you sure you want to remove them?';
+      heading.textContent = `Remove ${torrents.length} transfers?`;
     }
-    return { heading, message };
+
+    const check = document.createElement('input');
+    check.id = 'delete-local-data-check';
+    check.type = 'checkbox';
+    check.checked = options.trash;
+    message.append(check);
+
+    const label = document.createElement('label');
+    label.id = 'delete-local-data-label';
+    label.setAttribute('for', check.id);
+    label.textContent = 'Delete downloaded data';
+    message.append(label);
+
+    const e = document.createElement('div');
+    const rewrite = () => {
+      if (options.trash && torrents.length === 1) {
+        e.textContent =
+          'All data downloaded for this torrent will be deleted. Are you sure you want to remove it?';
+      } else if (options.trash) {
+        e.textContent =
+          'All data downloaded for these torrents will be deleted. Are you sure you want to remove them?';
+      } else if (torrents.length === 1) {
+        e.textContent = 
+          'Once removed, continuing the transfer will require the torrent file. Are you sure you want to remove it?';
+      } else {
+        e.textContent =
+          'Once removed, continuing the transfers will require the torrent files. Are you sure you want to remove them?';
+      }
+      confirm.textContent = options.trash ? 'Delete' : 'Remove';
+    }
+    rewrite();
+    check.addEventListener('click', () => {
+      options.trash = check.checked;
+      rewrite();
+    });
+    workarea.append(e);
+    return elements;
   }
 }

@@ -200,7 +200,7 @@ export class Transmission extends EventTarget {
       this.refilterAllSoon();
     });
 
-    if (s.value) {
+    if (s.value.trim()) {
       this.filterText = s.value;
       e.style.display = 'block';
       this.refilterAllSoon();
@@ -701,7 +701,7 @@ export class Transmission extends EventTarget {
     this.busytyping = setTimeout(
       () => {
         this.busytyping = false;
-        this.filterText = search ? search.trim() : '';
+        this.filterText = search.trim();
         this.refilterAllSoon();
       },
       search ? 250 : 0,

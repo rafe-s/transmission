@@ -1040,7 +1040,7 @@ TODO: fix this when notifications get fixed
           const new_ta = [];
           for (const t of text_array) {
             if (t) {
-              new_ta.push(a.find(e => e.startsWith(t)));
+              new_ta.push(a.find((e) => e.startsWith(t)));
             }
           }
           text_array = new_ta;
@@ -1049,7 +1049,7 @@ TODO: fix this when notifications get fixed
         if (op) {
           c.push(text_array);
         } else {
-          c[c.length - 1].push(...text_array);
+          c.at(-1).push(...text_array);
         }
 
         if (text && !text.endsWith(',')) {
@@ -1071,20 +1071,19 @@ TODO: fix this when notifications get fixed
     this._filter.search = [];
     this._filter.labels = [];
     this._filter.states =
-      filter_mode !== Prefs.FilterAll
-        ? [[filter_mode]]
-        : [];
+      filter_mode === Prefs.FilterAll ? [] : [[filter_mode]];
     this._filter.trackers = this.filterTracker ? [[this.filterTracker]] : [];
 
     if (this.filterText.length > 0) {
-      for (let [n, t] of this.filterText.match(/(?:\\.|[^"])+|^/g).entries()) {
+      const farray = this.filterText.match(/(?:\\.|[^"])+|^/g);
+      for (let [n, t] of farray.entries()) {
         // array of non-quoted then quoted in odd-even model
         if (n % 2) {
           // quoted
           const c = this._filter.controller;
           if (c) {
             const a = this._filter.autocomplete;
-            c[c.length - 1].push(a ? a.find(e => e.startsWith(t)) : t);
+            c.at(-1).push(a ? a.find((e) => e.startsWith(t)) : t);
           } else {
             this._filter.opless.push(t);
           }

@@ -1061,10 +1061,6 @@ TODO: fix this when notifications get fixed
 
   _rebuildFilter() {
     const { filter_mode } = this.prefs;
-
-    this._filter.autocomplete = null;
-    this._filter.controller = null;
-    this._filter.opless = [];
     this._filter.search = [];
     this._filter.labels = [];
     this._filter.states =
@@ -1072,6 +1068,9 @@ TODO: fix this when notifications get fixed
     this._filter.trackers = this.filterTracker ? [[this.filterTracker]] : [];
 
     if (this.filterText) {
+      this._filter.autocomplete = null;
+      this._filter.controller = null;
+      this._filter.opless = [];
       const farray = this.filterText.match(/(?:\\.|[^"])+|^/g);
       // array of non-quoted then quoted in odd-even model
       for (const [n, t] of farray.entries()) {
@@ -1096,10 +1095,10 @@ TODO: fix this when notifications get fixed
           }
         }
       }
-    }
 
-    if (this._filter.opless.length > 0) {
-      this._filter.search.push(this._filter.opless);
+      if (this._filter.opless.length > 0) {
+        this._filter.search.push(this._filter.opless);
+      }
     }
   }
 

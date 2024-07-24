@@ -1024,16 +1024,13 @@ TODO: fix this when notifications get fixed
         if (!op) {
           continue;
         }
+        text = op_text.slice(op.length);
         this._filter.autocomplete = a;
         this._filter.controller = this._filter[c];
       }
 
       c = this._filter.controller;
       if (op || c) {
-        if (op) {
-          text = op_text.slice(op.length);
-        }
-
         let text_array = text.split(/,+/);
         a = this._filter.autocomplete;
         if (a) {

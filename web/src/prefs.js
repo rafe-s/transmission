@@ -103,10 +103,10 @@ Prefs.FilterDownloading = 'downloading';
 Prefs.FilterFinished = 'finished';
 Prefs.FilterMode = 'filter-mode';
 Prefs.FilterOps = {
-  'label': ['labels:', 'label:', 'kw:'],
-  'name': ['name:'],
-  'status': ['status:', 'is:'],
-  'tracker': ['tracker:', 'tr:'],
+  label: ['labels:', 'label:', 'kw:'],
+  name: ['name:'],
+  status: ['status:', 'is:'],
+  tracker: ['tracker:', 'tr:'],
 };
 Prefs.FilterPaused = 'paused';
 Prefs.FilterSeeding = 'seeding';

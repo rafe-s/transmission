@@ -1025,13 +1025,13 @@ TODO: fix this when notifications get fixed
   }
 
   _refilter(rebuildEverything) {
+    document.querySelector('#reset').style.display =
+      this.filterText.length > 0 ? 'block' : 'none';
+
     const { sort_mode, sort_direction, filter_mode } = this.prefs;
     const filter_tracker = this.filterTracker;
     const renderer = this.torrentRenderer;
     const list = this.elements.torrent_list;
-
-    document.querySelector('#reset').style.display =
-      this.filterText.length > 0 ? 'block' : 'none';
 
     let filter_text = null;
     let labels = null;

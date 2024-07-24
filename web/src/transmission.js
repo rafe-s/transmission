@@ -1016,10 +1016,11 @@ TODO: fix this when notifications get fixed
     }
   }
 
-  _registerFilter(text) {
+  _registerFilter(op_text) {
+    let text = op_text;
     for (let [op, c, a] of this.searchOperators) {
       if (op) {
-        op = op.find((x) => text.startsWith(x));
+        op = op.find((x) => op_text.startsWith(x));
         if (!op) {
           continue;
         }
@@ -1030,7 +1031,7 @@ TODO: fix this when notifications get fixed
       c = this._filter.controller;
       if (op || c) {
         if (op) {
-          text = text.slice(op.length);
+          text = op_text.slice(op.length);
         }
 
         let text_array = text.split(/,+/);
@@ -1089,9 +1090,9 @@ TODO: fix this when notifications get fixed
           }
         } else {
           // not quoted
-          for (const text of t.toLowerCase().split(/ +/)) {
-            if (text) {
-              this._registerFilter(text);
+          for (const op_text of t.toLowerCase().split(/ +/)) {
+            if (op_text) {
+              this._registerFilter(op_text);
             } else {
               this._filter.autocomplete = null;
               this._filter.controller = null;
@@ -1110,7 +1111,6 @@ TODO: fix this when notifications get fixed
     const { sort_mode, sort_direction } = this.prefs;
     const renderer = this.torrentRenderer;
     const list = this.elements.torrent_list;
-
     const countRows = () => [...list.children].length;
     const countSelectedRows = () =>
       [...list.children].reduce(

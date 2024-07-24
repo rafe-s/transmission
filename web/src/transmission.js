@@ -1071,7 +1071,7 @@ TODO: fix this when notifications get fixed
       filter_mode === Prefs.FilterAll ? [] : [[filter_mode]];
     this._filter.trackers = this.filterTracker ? [[this.filterTracker]] : [];
 
-    if (this.filterText.length > 0) {
+    if (this.filterText) {
       const farray = this.filterText.match(/(?:\\.|[^"])+|^/g);
       // array of non-quoted then quoted in odd-even model
       for (const [n, t] of farray.entries()) {
@@ -1124,7 +1124,7 @@ TODO: fix this when notifications get fixed
     if (rebuildEverything) {
       this._rebuildFilter();
       while (list.firstChild) {
-        list.firstChild.remove();
+        list.lastChild.remove();
       }
       this._rows = [];
       this.dirtyTorrents = new Set(Object.keys(this._torrents));

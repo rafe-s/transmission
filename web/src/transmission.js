@@ -1076,7 +1076,7 @@ TODO: fix this when notifications get fixed
 
     if (this.filterText.length > 0) {
       const farray = this.filterText.match(/(?:\\.|[^"])+|^/g);
-      for (let [n, t] of farray.entries()) {
+      for (const [n, t] of farray.entries()) {
         // array of non-quoted then quoted in odd-even model
         if (n % 2) {
           // quoted

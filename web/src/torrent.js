@@ -396,8 +396,8 @@ export class Torrent extends EventTarget {
           label_array.every((label) =>
             torrent_labels.some((torrent_label) =>
               torrent_label.includes(label),
-            )
-          )
+            ),
+          ),
         )
       ) {
         return false;
@@ -405,14 +405,13 @@ export class Torrent extends EventTarget {
     }
 
     // filter by status
-    if (_filter.states.length > 0) {
-      if (
-        !_filter.states.some((state_array) =>
-          state_array.every((state) => this.testState(state)),
-        )
-      ) {
-        return false;
-      }
+    if (
+      _filter.states.length > 0 &&
+      !_filter.states.some((state_array) =>
+        state_array.every((state) => this.testState(state)),
+      )
+    ) {
+      return false;
     }
 
     // filter by tracker
@@ -420,9 +419,7 @@ export class Torrent extends EventTarget {
       const torrent_trackers = this.getCollatedTrackers();
       if (
         !_filter.trackers.some((tracker_array) =>
-          tracker_array.every((tracker) =>
-            torrent_trackers.includes(tracker),
-          )
+          tracker_array.every((tracker) => torrent_trackers.includes(tracker)),
         )
       ) {
         return false;

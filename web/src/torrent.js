@@ -379,7 +379,11 @@ export class Torrent extends EventTarget {
     // filter by text
     if (_filter.search.length > 0) {
       const name = this.getCollatedName();
-      if (!_filter.search.some((search_array) => search_array.every((text) => name.includes(text)))) {
+      if (
+        !_filter.search.some((search_array) =>
+          search_array.every((text) => name.includes(text)),
+        )
+      ) {
         return false;
       }
     }
@@ -387,14 +391,26 @@ export class Torrent extends EventTarget {
     // filter by label
     if (_filter.labels.length > 0) {
       const torrent_labels = this.getLabels();
-      if (!_filter.labels.some((label_array) => label_array.every((label) => torrent_labels.some((torrent_label) => torrent_label.includes(label))))) {
+      if (
+        !_filter.labels.some((label_array) =>
+          label_array.every((label) =>
+            torrent_labels.some((torrent_label) =>
+              torrent_label.includes(label),
+            )
+          )
+        )
+      ) {
         return false;
       }
     }
 
     // filter by status
     if (_filter.states.length > 0) {
-      if (!_filter.states.some((state_array) => state_array.every((state) => this.testState(state)))) {
+      if (
+        !_filter.states.some((state_array) =>
+          state_array.every((state) => this.testState(state)),
+        )
+      ) {
         return false;
       }
     }
@@ -402,7 +418,13 @@ export class Torrent extends EventTarget {
     // filter by tracker
     if (_filter.trackers.length > 0) {
       const torrent_trackers = this.getCollatedTrackers();
-      if (!_filter.trackers.some((tracker_array) => tracker_array.every((tracker) => torrent_trackers.includes(tracker)))) {
+      if (
+        !_filter.trackers.some((tracker_array) =>
+          tracker_array.every((tracker) =>
+            torrent_trackers.includes(tracker),
+          )
+        )
+      ) {
         return false;
       }
     }

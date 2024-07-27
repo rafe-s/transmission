@@ -375,25 +375,24 @@ export class Torrent extends EventTarget {
     }
   }
 
-  subTest(a, callback, f) {
-    return a.length === 0 || a.some((t) => t.every((x) => callback(x, f)));
-  }
-
   test(_filter) {
+    const subTest = (a, callback, f) => {
+      return a.length === 0 || a.some((t) => t.every((x) => callback(x, f)));
+    }
     const callback = (x, f) => f.includes(x);
     const callback2 = (x, f) => f.some((z) => z.includes(x));
 
     // filter by status
-    return this.subTest(_filter.states, (x) => this.testState(x)) &&
+    return subTest(_filter.states, (x) => this.testState(x)) &&
 
     // filter by text
-    this.subTest(_filter.search, callback, this.getCollatedName()) &&
+    subTest(_filter.search, callback, this.getCollatedName()) &&
 
     // filter by label
-    this.subTest(_filter.labels, callback2, this.getLabels()) &&
+    subTest(_filter.labels, callback2, this.getLabels()) &&
 
     // filter by tracker
-    this.subTest(_filter.trackers, callback, this.getCollatedTrackers());
+    subTest(_filter.trackers, callback, this.getCollatedTrackers());
   }
 
   static compareById(ta, tb) {

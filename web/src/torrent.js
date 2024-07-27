@@ -376,22 +376,57 @@ export class Torrent extends EventTarget {
   }
 
   test(_filter) {
-    const subTest = (a, callback, f) => {
-      return a.length === 0 || a.some((t) => t.every((x) => callback(x, f)));
-    };
-    const callback = (x, f) => f.includes(x);
-    const callback2 = (x, f) => f.some((z) => z.includes(x));
+    // filter by text
+    if (_filter.search.length > 0) {
+      const name = this.getCollatedName();
+      if (
+        !_filter.search.some((search_array) =>
+          search_array.every((text) => name.includes(text)),
+        )
+      ) {
+        return false;
+      }
+    }
 
-    return (
-      // filter by status
-      subTest(_filter.states, (x) => this.testState(x)) &&
-      // filter by text
-      subTest(_filter.search, callback, this.getCollatedName()) &&
-      // filter by label
-      subTest(_filter.labels, callback2, this.getLabels()) &&
-      // filter by tracker
-      subTest(_filter.trackers, callback, this.getCollatedTrackers())
-    );
+    // filter by label
+    if (_filter.labels.length > 0) {
+      const torrent_labels = this.getLabels();
+      if (
+        !_filter.labels.some((label_array) =>
+          label_array.every((label) =>
+            torrent_labels.some((torrent_label) =>
+              torrent_label.includes(label),
+            ),
+          ),
+        )
+      ) {
+        return false;
+      }
+    }
+
+    // filter by status
+    if (
+      _filter.states.length > 0 &&
+      !_filter.states.some((state_array) =>
+        state_array.every((state) => this.testState(state)),
+      )
+    ) {
+      return false;
+    }
+
+    // filter by tracker
+    if (_filter.trackers.length > 0) {
+      const torrent_trackers = this.getCollatedTrackers();
+      if (
+        !_filter.trackers.some((tracker_array) =>
+          tracker_array.every((tracker) => torrent_trackers.includes(tracker)),
+        )
+      ) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   static compareById(ta, tb) {

@@ -389,15 +389,16 @@ export class Torrent extends EventTarget {
     // filter by label
     if (_filter.labels.length > 0) {
       const torrent_labels = this.getLabels();
-      if (!pass(_filter.labels, (x) =>
-        torrent_labels.some((z) => z.includes(x)))
+      if (
+        !pass(_filter.labels, (x) => torrent_labels.some((z) => z.includes(x)))
       ) {
         return false;
       }
     }
 
     // filter by status
-    if (_filter.states.length > 0 &&
+    if (
+      _filter.states.length > 0 &&
       !pass(_filter.states, (x) => this.testState(x))
     ) {
       return false;

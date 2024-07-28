@@ -390,6 +390,11 @@ export class Torrent extends EventTarget {
         (x) => v.includes(x),
       ) &&
       pass(
+        _filter.trackers,
+        () => this.getCollatedTrackers(),
+        (x) => v.includes(x),
+      ) &&
+      pass(
         _filter.states,
         () => this.getStatus(),
         (x) => this.testState(v, x),
@@ -398,11 +403,6 @@ export class Torrent extends EventTarget {
         _filter.labels,
         () => this.getLabels(),
         (x) => v.some((z) => z.includes(x)),
-      ) &&
-      pass(
-        _filter.trackers,
-        () => this.getCollatedTrackers(),
-        (x) => v.includes(x),
       )
     );
   }

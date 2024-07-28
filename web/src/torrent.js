@@ -223,7 +223,7 @@ export class Torrent extends EventTarget {
   getStartDate() {
     return this.fields.startDate;
   }
-  getStatus(search) {
+  getStatus() {
     return this.fields.status;
   }
   getTotalSize() {

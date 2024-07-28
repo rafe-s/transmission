@@ -392,7 +392,7 @@ export class Torrent extends EventTarget {
       pass(
         _filter.trackers,
         () => this.getCollatedTrackers(),
-        (x) => v.includes(x)
+        (x) => v.includes(x),
       ) &&
       pass(
         _filter.states,
@@ -404,7 +404,7 @@ export class Torrent extends EventTarget {
         () => this.getLabels(),
         (x) => v.some((z) => z.includes(x)),
       )
-    )
+    );
   }
 
   static compareById(ta, tb) {

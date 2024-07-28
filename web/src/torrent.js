@@ -163,8 +163,9 @@ export class Torrent extends EventTarget {
   getId() {
     return this.fields.id;
   }
-  getLabels() {
-    return this.fields.labels.sort();
+  getLabels(search) {
+    const labels = this.fields.labels;
+    return search ? (x) => labels.some((z) => z.includes(x)) : labels.sort();
   }
   getLastActivity() {
     return this.fields.activityDate;
@@ -223,8 +224,9 @@ export class Torrent extends EventTarget {
   getStartDate() {
     return this.fields.startDate;
   }
-  getStatus() {
-    return this.fields.status;
+  getStatus(search) {
+    const status = this.fields.status;
+    return search ? (x) => this.testState(status, x) : status;
   }
   getTotalSize() {
     return this.fields.totalSize;
@@ -330,19 +332,21 @@ export class Torrent extends EventTarget {
         return null;
     }
   }
-  getCollatedName() {
+  getCollatedName(search) {
     const f = this.fields;
     if (!f.collatedName && f.name) {
       f.collatedName = f.name.toLowerCase();
     }
-    return f.collatedName || '';
+    const name = f.collatedName || '';
+    return search ? (x) => name.includes(x) : name;
   }
-  getCollatedTrackers() {
+  getCollatedTrackers(search) {
     const f = this.fields;
     if (!f.collatedTrackers && f.trackers) {
       f.collatedTrackers = Torrent.collateTrackers(f.trackers);
     }
-    return f.collatedTrackers || '';
+    const trackers = f.collatedTrackers || '';
+    return search ? (x) => trackers.includes(x) : trackers;
   }
 
   /****
@@ -374,36 +378,19 @@ export class Torrent extends EventTarget {
   }
 
   test(_filter) {
-    let v = null;
-    const pass = (a, vf, callback) => {
+    const pass = (a, callback) => {
       if (a.length === 0) {
         return true;
       }
-      v = vf();
-      return a.some((t) => t.every((x) => callback(x)));
+      const c = callback();
+      return a.some((t) => t.every((x) => c(x)));
     };
 
     return (
-      pass(
-        _filter.search,
-        () => this.getCollatedName(),
-        (x) => v.includes(x),
-      ) &&
-      pass(
-        _filter.trackers,
-        () => this.getCollatedTrackers(),
-        (x) => v.includes(x),
-      ) &&
-      pass(
-        _filter.states,
-        () => this.getStatus(),
-        (x) => this.testState(v, x),
-      ) &&
-      pass(
-        _filter.labels,
-        () => this.getLabels(),
-        (x) => v.some((z) => z.includes(x)),
-      )
+      this.pass(_filter.search, () => this.getCollatedName(true)) &&
+      this.pass(_filter.trackers, () => this.getCollatedTrackers(true)) &&
+      this.pass(_filter.labels, () => this.getLabels(true)) &&
+      this.pass(_filter.states,() => this.getStatus(true))
     );
   }
 

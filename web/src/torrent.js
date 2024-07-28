@@ -387,10 +387,10 @@ export class Torrent extends EventTarget {
     };
 
     return (
-      this.pass(_filter.search, () => this.getCollatedName(true)) &&
-      this.pass(_filter.trackers, () => this.getCollatedTrackers(true)) &&
-      this.pass(_filter.labels, () => this.getLabels(true)) &&
-      this.pass(_filter.states,() => this.getStatus(true))
+      pass(_filter.search, () => this.getCollatedName(true)) &&
+      pass(_filter.trackers, () => this.getCollatedTrackers(true)) &&
+      pass(_filter.labels, () => this.getLabels(true)) &&
+      pass(_filter.states,() => this.getStatus(true))
     );
   }
 

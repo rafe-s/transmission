@@ -353,7 +353,7 @@ export class Torrent extends EventTarget {
   searchLabels() {
     return (x) => this.fields.labels.some((z) => z.includes(x));
   }
-  searchStatus() {
+  searchState() {
     return (x) => this.testState(this.fields.status, x);
   }
 
@@ -398,7 +398,7 @@ export class Torrent extends EventTarget {
       pass(_filter.search, () => this.searchName()) &&
       pass(_filter.trackers, () => this.searchTrackers()) &&
       pass(_filter.labels, () => this.searchLabels()) &&
-      pass(_filter.states, () => this.searchStatus())
+      pass(_filter.states, () => this.searchState())
     );
   }
 

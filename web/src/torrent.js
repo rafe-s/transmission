@@ -344,18 +344,6 @@ export class Torrent extends EventTarget {
     }
     return f.collatedTrackers || '';
   }
-  searchName() {
-    return (x) => this.getCollatedName().includes(x);
-  }
-  searchTrackers() {
-    return (x) => this.getCollatedTrackers().includes(x);
-  }
-  searchLabels() {
-    return (x) => this.fields.labels.some((z) => z.includes(x));
-  }
-  searchState() {
-    return (x) => this.testState(this.fields.status, x);
-  }
 
   /****
    *****
@@ -386,19 +374,36 @@ export class Torrent extends EventTarget {
   }
 
   test(_filter) {
-    const pass = (a, callback) => {
+    let v = null;
+    const pass = (a, vf, callback) => {
       if (a.length === 0) {
         return true;
       }
-      const c = callback();
-      return a.some((t) => t.every((x) => c(x)));
+      v = vf();
+      return a.some((t) => t.every((x) => callback(x)));
     };
 
     return (
-      pass(_filter.search, () => this.searchName()) &&
-      pass(_filter.trackers, () => this.searchTrackers()) &&
-      pass(_filter.labels, () => this.searchLabels()) &&
-      pass(_filter.states, () => this.searchState())
+      pass(
+        _filter.search,
+        () => this.getCollatedName(),
+        (x) => v.includes(x),
+      ) &&
+      pass(
+        _filter.trackers,
+        () => this.getCollatedTrackers(),
+        (x) => v.includes(x),
+      ) &&
+      pass(
+        _filter.states,
+        () => this.getStatus(),
+        (x) => this.testState(v, x),
+      ) &&
+      pass(
+        _filter.labels,
+        () => this.getLabels(),
+        (x) => v.some((z) => z.includes(x)),
+      )
     );
   }
 

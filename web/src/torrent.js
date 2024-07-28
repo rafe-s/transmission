@@ -164,7 +164,7 @@ export class Torrent extends EventTarget {
     return this.fields.id;
   }
   getLabels(search) {
-    const labels = this.fields.labels;
+    const { labels } = this.fields;
     return search ? (x) => labels.some((z) => z.includes(x)) : labels.sort();
   }
   getLastActivity() {
@@ -225,7 +225,7 @@ export class Torrent extends EventTarget {
     return this.fields.startDate;
   }
   getStatus(search) {
-    const status = this.fields.status;
+    const { status } = this.fields;
     return search ? (x) => this.testState(status, x) : status;
   }
   getTotalSize() {
@@ -390,7 +390,7 @@ export class Torrent extends EventTarget {
       pass(_filter.search, () => this.getCollatedName(true)) &&
       pass(_filter.trackers, () => this.getCollatedTrackers(true)) &&
       pass(_filter.labels, () => this.getLabels(true)) &&
-      pass(_filter.states,() => this.getStatus(true))
+      pass(_filter.states, () => this.getStatus(true))
     );
   }
 

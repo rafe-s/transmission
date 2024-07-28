@@ -349,9 +349,7 @@ export class Torrent extends EventTarget {
    *****
    ****/
 
-  testState(state) {
-    const s = this.getStatus();
-
+  testState(s, state) {
     switch (state) {
       case Prefs.FilterActive:
         return (
@@ -375,44 +373,22 @@ export class Torrent extends EventTarget {
     }
   }
 
-  test(_filter) {
-    const pass = (a, c) => a.some((t) => t.every((x) => c(x)));
-
-    // filter by text
-    if (_filter.search.length > 0) {
-      const name = this.getCollatedName();
-      if (!pass(_filter.search, (x) => name.includes(x))) {
-        return false;
+  test(f) {
+    let v = null;
+    const i = (a, vf, callback) => {
+      if (a.length === 0) {
+        return true;
       }
+      v = vf();
+      return a.some((t) => t.every((x) => callback(x)));
     }
 
-    // filter by label
-    if (_filter.labels.length > 0) {
-      const torrent_labels = this.getLabels();
-      if (
-        !pass(_filter.labels, (x) => torrent_labels.some((z) => z.includes(x)))
-      ) {
-        return false;
-      }
-    }
-
-    // filter by status
-    if (
-      _filter.states.length > 0 &&
-      !pass(_filter.states, (x) => this.testState(x))
-    ) {
-      return false;
-    }
-
-    // filter by tracker
-    if (_filter.trackers.length > 0) {
-      const torrent_trackers = this.getCollatedTrackers();
-      if (!pass(_filter.trackers, (x) => torrent_trackers.includes(x))) {
-        return false;
-      }
-    }
-
-    return true;
+    return (
+      i(f.search, () => this.getCollatedName(), (x) => v.includes(x)) &&
+      i(f.trackers, () => this.getCollatedTrackers(), (x) => v.includes(x)) &&
+      i(f.states, () => this.getStatus(), (x) => this.testState(v, x)) &&
+      i(f.labels, () => this.getLabels(), (x) => v.some((z) => z.includes(x)))
+    )
   }
 
   static compareById(ta, tb) {

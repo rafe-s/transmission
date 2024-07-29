@@ -387,22 +387,22 @@ export class Torrent extends EventTarget {
       pass(
         _filter.search,
         () => this.getCollatedName(),
-        (x) => v.includes(x),
-      ) &&
-      pass(
-        _filter.trackers,
-        () => this.getCollatedTrackers(),
-        (x) => v.includes(x),
-      ) &&
-      pass(
-        _filter.states,
-        () => this.getStatus(),
-        (x) => this.testState(v, x),
+        (x) => v.includes(x)
       ) &&
       pass(
         _filter.labels,
         () => this.getLabels(),
-        (x) => v.some((z) => z.includes(x)),
+        (x) => v.some((z) => z.includes(x))
+      ) &&
+      pass(
+        _filter.states,
+        () => this.getStatus(),
+        (x) => this.testState(v, x)
+      ) &&
+      pass(
+        _filter.trackers,
+        () => this.getCollatedTrackers(),
+        (x) => v.includes(x)
       )
     );
   }

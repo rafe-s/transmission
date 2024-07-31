@@ -1086,7 +1086,7 @@ TODO: fix this when notifications get fixed
           }
         } else {
           // not quoted
-          for (const op_text of text.toLowerCase().split(/ +/)) {
+          for (const op_text of text.trimEnd().toLowerCase().split(/ +/)) {
             if (op_text) {
               this._registerFilter(op_text);
             } else {

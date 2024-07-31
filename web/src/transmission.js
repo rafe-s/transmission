@@ -1073,7 +1073,8 @@ TODO: fix this when notifications get fixed
       this._filter.opless = [];
       const farray = this.filterText.match(/(?:\\.|[^"])+|^/g);
       // array of non-quoted then quoted in odd-even model
-      for (const [n, t] of farray.entries()) {
+      for (let [n, t] of farray.entries()) {
+        t = t.replace(/\\(.)/g, '$1');
         if (n % 2) {
           // quoted
           const c = this._filter.controller;

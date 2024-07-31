@@ -1074,7 +1074,7 @@ TODO: fix this when notifications get fixed
       const farray = this.filterText.match(/(?:\\.|[^"])+|^/g);
       // array of non-quoted then quoted in odd-even model
       for (const [n, t] of farray.entries()) {
-        const text = t.replace(/\\(.)/g, '$1');
+        const text = t.replaceAll(/\\(.)/g, '$1');
         if (n % 2) {
           // quoted
           const c = this._filter.controller;

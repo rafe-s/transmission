@@ -1073,20 +1073,20 @@ TODO: fix this when notifications get fixed
       this._filter.opless = [];
       const farray = this.filterText.match(/(?:\\.|[^"])+|^/g);
       // array of non-quoted then quoted in odd-even model
-      for (let [n, t] of farray.entries()) {
-        t = t.replace(/\\(.)/g, '$1');
+      for (const [n, t] of farray.entries()) {
+        const text = t.replace(/\\(.)/g, '$1');
         if (n % 2) {
           // quoted
           const c = this._filter.controller;
           if (c) {
             const a = this._filter.autocomplete;
-            c.at(-1).push(a ? a.find((e) => e.startsWith(t)) : t);
+            c.at(-1).push(a ? a.find((e) => e.startsWith(text)) : text);
           } else {
-            this._filter.opless.push(t);
+            this._filter.opless.push(text);
           }
         } else {
           // not quoted
-          for (const op_text of t.toLowerCase().split(/ +/)) {
+          for (const op_text of text.toLowerCase().split(/ +/)) {
             if (op_text) {
               this._registerFilter(op_text);
             } else {

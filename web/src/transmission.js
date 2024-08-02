@@ -41,23 +41,6 @@ export class Transmission extends EventTarget {
 
     // Initialize the implementation fields
     this.filterText = '';
-    this.searchOperators = [
-      [Prefs.FilterOps.name, 'search'],
-      [Prefs.FilterOps.label, 'labels'],
-      [
-        Prefs.FilterOps.status,
-        'states',
-        [
-          Prefs.FilterActive,
-          Prefs.FilterDownloading,
-          Prefs.FilterSeeding,
-          Prefs.FilterPaused,
-          Prefs.FilterFinished,
-        ],
-      ],
-      [Prefs.FilterOps.tracker, 'trackers'],
-      [],
-    ];
     this._filter = {};
     this._torrents = {};
     this._rows = [];
@@ -1017,8 +1000,31 @@ TODO: fix this when notifications get fixed
   }
 
   _registerFilter(op_text) {
+    const op_keywords = {
+      label: ['labels:', 'label:', 'kw:'],
+      name: ['name:'],
+      status: ['status:', 'is:'],
+      tracker: ['tracker:', 'tr:'],
+    };
+    const search_ops = [
+      [op_keywords.name, 'search'],
+      [op_keywords.label, 'labels'],
+      [
+        op_keywords.status,
+        'states',
+        [
+          Prefs.FilterActive,
+          Prefs.FilterDownloading,
+          Prefs.FilterSeeding,
+          Prefs.FilterPaused,
+          Prefs.FilterFinished,
+        ],
+      ],
+      [op_keywords.tracker, 'trackers'],
+      [],
+    ];
     let text = op_text;
-    for (let [op, c, a] of this.searchOperators) {
+    for (let [op, c, a] of search_ops) {
       if (op) {
         op = op.find((x) => op_text.startsWith(x));
         if (!op) {

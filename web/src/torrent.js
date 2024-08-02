@@ -374,35 +374,37 @@ export class Torrent extends EventTarget {
   }
 
   test(_filter) {
-    let v = null;
     const pass = (a, vf, callback) => {
       if (a.length === 0) {
         return true;
       }
-      v = vf();
-      return a.some((t) => t.every((x) => callback(x)));
+      const v = vf();
+      if (_filter.swap) {
+        return a.every((t) => t.some((x) => callback(x, v)));
+      }
+      return a.some((t) => t.every((x) => callback(x, v)));
     };
 
     return (
       pass(
         _filter.search,
         () => this.getCollatedName(),
-        (x) => v.includes(x),
+        (x, v) => v.includes(x),
       ) &&
       pass(
         _filter.labels,
         () => this.getLabels(),
-        (x) => v.some((z) => z.includes(x)),
+        (x, v) => v.some((z) => z.includes(x)),
       ) &&
       pass(
         _filter.states,
         () => this.getStatus(),
-        (x) => this.testState(v, x),
+        (x, v) => this.testState(v, x),
       ) &&
       pass(
         _filter.trackers,
         () => this.getCollatedTrackers(),
-        (x) => v.includes(x),
+        (x, v) => v.includes(x),
       )
     );
   }

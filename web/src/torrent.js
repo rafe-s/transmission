@@ -379,9 +379,6 @@ export class Torrent extends EventTarget {
         return true;
       }
       const v = vf();
-      if (_filter.swap) {
-        return a.every((t) => t.some((x) => callback(x, v)));
-      }
       return a.some((t) => t.every((x) => callback(x, v)));
     };
 

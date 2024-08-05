@@ -1025,9 +1025,6 @@ TODO: fix this when notifications get fixed
   }
 
   _refilter(rebuildEverything) {
-    document.querySelector('#reset').style.display =
-      this.filterText.length > 0 ? 'block' : 'none';
-
     const { sort_mode, sort_direction, filter_mode } = this.prefs;
     const filter_tracker = this.filterTracker;
     const renderer = this.torrentRenderer;
@@ -1064,6 +1061,9 @@ TODO: fix this when notifications get fixed
       }
       this._rows = [];
       this.dirtyTorrents = new Set(Object.keys(this._torrents));
+
+      document.querySelector('#reset').style.display =
+        this.filterText.length > 0 ? 'block' : 'none';
     }
 
     // rows that overlap with dirtyTorrents need to be refiltered.

@@ -31,7 +31,10 @@ export class ActionManager extends EventTarget {
         enabled: false,
         text: 'Ask tracker for more peers',
       },
-      'remove-selected-torrents': { enabled: false, text: 'Remove selected torrents' },
+      'remove-selected-torrents': {
+        enabled: false,
+        text: 'Remove selected torrents'
+      },
       'resume-selected-torrents': {
         enabled: false,
         shortcut: 'R',

@@ -9,8 +9,9 @@ export class RemoveDialog extends EventTarget {
   constructor(options) {
     super();
 
-    // options: remote, torrents, trash
+    // options: remote, torrents
     this.options = options;
+    this.options.trash = false;
     this.elements = RemoveDialog._create(options);
     this.elements.dismiss.addEventListener('click', () => this._onDismiss());
     this.elements.confirm.addEventListener('click', () => this._onConfirm());
@@ -43,7 +44,7 @@ export class RemoveDialog extends EventTarget {
   }
 
   static _create(options) {
-    const { torrents, trash } = options;
+    const { torrents } = options;
     const elements = createDialogContainer('remove-dialog');
     const { confirm, heading, message, workarea } = elements;
 

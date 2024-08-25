@@ -33,7 +33,7 @@ export class ActionManager extends EventTarget {
       },
       'remove-selected-torrents': {
         enabled: false,
-        text: 'Remove selected torrents'
+        text: 'Remove selected torrents',
       },
       'resume-selected-torrents': {
         enabled: false,

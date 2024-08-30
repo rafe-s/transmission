@@ -158,7 +158,7 @@ void onAnnounceDone(tr_web::FetchResponse const& web_response)
             // Choose the one that went further to report.
             if (data->previous_response)
             {
-	 	data->on_response(response.did_connect || response.did_timeout ? response : *data->previous_response)
+	 	data->on_response(response.did_connect || response.did_timeout ? response : *data->previous_response);
             }
         }
         else

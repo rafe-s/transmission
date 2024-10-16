@@ -378,7 +378,7 @@ tr_rpc_callback_status on_rpc_callback(tr_session* /*session*/, tr_rpc_callback_
 
 tr_variant load_settings(char const* config_dir)
 {
-    auto app_defaults_map = tr_variant::Map{ 5 };
+    auto app_defaults_map = tr_variant::Map{ 5U };
     app_defaults_map.try_emplace(TR_KEY_watch_dir, tr_variant::unmanaged_string(""sv));
     app_defaults_map.try_emplace(TR_KEY_watch_dir_enabled, false);
     app_defaults_map.try_emplace(TR_KEY_watch_dir_force_generic, false);

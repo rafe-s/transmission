@@ -56,7 +56,7 @@ export class RemoveDialog extends EventTarget {
     const check = document.createElement('input');
     check.id = 'delete-local-data-check';
     check.type = 'checkbox';
-    check.checked = options.trash;
+    check.checked = false;
     message.append(check);
 
     const label = document.createElement('label');

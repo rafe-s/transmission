@@ -65,29 +65,29 @@ export class RemoveDialog extends EventTarget {
     label.textContent = 'Delete downloaded data';
     message.append(label);
 
-    const e = document.createElement('div');
-    const rewrite = (c) => {
-      if (c && torrents.length === 1) {
-        e.textContent =
+    const body = document.createElement('div');
+    const rewrite = (trash) => {
+      if (trash && torrents.length === 1) {
+        body.textContent =
           'All data downloaded for this torrent will be deleted. Are you sure you want to remove it?';
-      } else if (c) {
-        e.textContent =
+      } else if (trash) {
+        body.textContent =
           'All data downloaded for these torrents will be deleted. Are you sure you want to remove them?';
       } else if (torrents.length === 1) {
-        e.textContent =
+        body.textContent =
           'Once removed, continuing the transfer will require the torrent file. Are you sure you want to remove it?';
       } else {
-        e.textContent =
+        body.textContent =
           'Once removed, continuing the transfers will require the torrent files. Are you sure you want to remove them?';
       }
-      confirm.textContent = c ? 'Delete' : 'Remove';
+      confirm.textContent = trash ? 'Delete' : 'Remove';
     };
     rewrite(check.checked);
     check.addEventListener('click', () => {
       options.trash = check.checked;
       rewrite(check.checked);
     });
-    workarea.append(e);
+    workarea.append(body);
     return elements;
   }
 }

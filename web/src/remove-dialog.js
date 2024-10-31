@@ -66,11 +66,11 @@ export class RemoveDialog extends EventTarget {
     message.append(label);
 
     const body = document.createElement('div');
-    const rewrite = (trash) => {
-      if (trash && torrents.length === 1) {
+    const rewrite = (checked) => {
+      if (checked && torrents.length === 1) {
         body.textContent =
           'All data downloaded for this torrent will be deleted. Are you sure you want to remove it?';
-      } else if (trash) {
+      } else if (checked) {
         body.textContent =
           'All data downloaded for these torrents will be deleted. Are you sure you want to remove them?';
       } else if (torrents.length === 1) {
@@ -80,7 +80,7 @@ export class RemoveDialog extends EventTarget {
         body.textContent =
           'Once removed, continuing the transfers will require the torrent files. Are you sure you want to remove them?';
       }
-      confirm.textContent = trash ? 'Delete' : 'Remove';
+      confirm.textContent = checked ? 'Delete' : 'Remove';
     };
     rewrite(check.checked);
     check.addEventListener('click', () => {

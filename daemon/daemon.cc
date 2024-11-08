@@ -378,12 +378,13 @@ tr_rpc_callback_status on_rpc_callback(tr_session* /*session*/, tr_rpc_callback_
 
 tr_variant load_settings(char const* config_dir)
 {
-    auto app_defaults_map = tr_variant::Map{ 5U };
+    auto app_defaults_map = tr_variant::Map{ 6U };
     app_defaults_map.try_emplace(TR_KEY_watch_dir, tr_variant::unmanaged_string(""sv));
     app_defaults_map.try_emplace(TR_KEY_watch_dir_enabled, false);
     app_defaults_map.try_emplace(TR_KEY_watch_dir_force_generic, false);
     app_defaults_map.try_emplace(TR_KEY_rpc_enabled, true);
     app_defaults_map.try_emplace(TR_KEY_start_paused, false);
+    app_defaults_map.try_emplace(TR_KEY_pidfile, tr_variant::unmanaged_string(""sv));
     auto const app_defaults = tr_variant{ std::move(app_defaults_map) };
     return tr_sessionLoadSettings(&app_defaults, config_dir, MyName);
 }
@@ -610,7 +611,7 @@ bool tr_daemon::parse_args(int argc, char const* const* argv, bool* dump_setting
             break;
 
         case 953:
-            if (auto const ratio_limit = tr_num_parse<double>(optstr); optstr)
+            if (auto const ratio_limit = tr_num_parse<double>(optstr); ratio_limit)
             {
                 map->insert_or_assign(TR_KEY_ratio_limit, *ratio_limit);
             }

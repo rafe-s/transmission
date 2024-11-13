@@ -59,13 +59,13 @@ target_sources(${TR_NAME}
         file-win32.cc
         file.cc
         file.h
-        global-ip-cache.cc
-        global-ip-cache.h
         handshake.cc
         handshake.h
         history.h
         inout.cc
         inout.h
+        ip-cache.cc
+        ip-cache.h
         log.cc
         log.h
         lru-cache.h
@@ -82,8 +82,6 @@ target_sources(${TR_NAME}
         peer-common.h
         peer-io.cc
         peer-io.h
-        peer-mgr-active-requests.cc
-        peer-mgr-active-requests.h
         peer-mgr-wishlist.cc
         peer-mgr-wishlist.h
         peer-mgr.cc

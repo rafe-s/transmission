@@ -240,7 +240,7 @@ export class Transmission extends EventTarget {
       const bounds_page = {
         bottom: bounds.bottom + globalThis.scrollY,
         right: bounds.right + globalThis.scrollX,
-      }
+      };
       const x = Math.min(
         this.isTouch ? event_.touches[0].pageX : event_.pageX,
         bounds_page.right - popup.root.clientWidth,

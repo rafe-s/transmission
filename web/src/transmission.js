@@ -239,11 +239,11 @@ export class Transmission extends EventTarget {
       const bounds = boundingElement.getBoundingClientRect();
       const x = Math.min(
         this.isTouch ? event_.touches[0].pageX : event_.pageX,
-        bounds.bottom + globalThis.scrollY - popup.root.clientWidth,
+        bounds.right + globalThis.scrollX - popup.root.clientWidth,
       );
       const y = Math.min(
         this.isTouch ? event_.touches[0].pageY : event_.pageY,
-        bounds.right + globalThis.scrollX - popup.root.clientHeight,
+        bounds.bottom + globalThis.scrollY - popup.root.clientHeight,
       );
       popup.root.style.left = `${Math.max(x, 0)}px`;
       popup.root.style.top = `${Math.max(y, 0)}px`;

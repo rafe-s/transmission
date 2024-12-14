@@ -76,8 +76,7 @@ template<typename T>
 
     if (auto* const map = var != nullptr ? var->get_if<tr_variant::MapIndex>() : nullptr; map != nullptr)
     {
-        map->erase(key);
-        return &map->try_emplace(key, std::forward<T>(val)).first;
+        return &map->insert_or_assign(key, std::forward<T>(val)).first;
     }
 
     return {};
@@ -135,11 +134,11 @@ template<>
         break;
 
     case StringIndex:
-        if (auto const val = *get_if<StringIndex>(); val == "true")
+        if (auto const val = *get_if<StringIndex>(); val == "true"sv)
         {
             return true;
         }
-        else if (val == "false")
+        else if (val == "false"sv)
         {
             return false;
         }

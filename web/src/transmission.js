@@ -51,7 +51,7 @@ export class Transmission extends EventTarget {
 
     this.boundPopupCloseListener = this.popupCloseListener.bind(this);
 
-    this.isTouch = 'ontouchstart' in window ? true : false;
+    this.isTouch = 'ontouchstart' in window;
     this.busyclick = false;
 
     // listen to actions
@@ -383,7 +383,8 @@ export class Transmission extends EventTarget {
       case Prefs.RefreshRate: {
         clearInterval(this.refreshTorrentsInterval);
         const callback = this.refreshTorrents.bind(this);
-        const msec = Math.max(2, this.prefs.refresh_rate_sec) * 1000;
+        const pref = this.prefs.refresh_rate_sec;
+        const msec = pref > 0 ? pref * 1000 : 1000;
         this.refreshTorrentsInterval = setInterval(callback, msec);
         break;
       }
@@ -514,7 +515,7 @@ export class Transmission extends EventTarget {
     if (event_.metaKey) {
       a.push('Meta');
     }
-    if (event_.shitKey) {
+    if (event_.shiftKey) {
       a.push('Shift');
     }
     a.push(event_.key.length === 1 ? event_.key.toUpperCase() : event_.key);
@@ -630,7 +631,7 @@ export class Transmission extends EventTarget {
   static _isValidURL(string) {
     try {
       const url = new URL(string);
-      return url ? true : false;
+      return Boolean(url);
     } catch {
       return false;
     }
@@ -647,9 +648,9 @@ export class Transmission extends EventTarget {
       return true;
     }
 
-    const type = event_.dataTransfer.types
-      .filter((t) => ['text/uri-list', 'text/plain'].includes(t))
-      .pop();
+    const type = event_.dataTransfer.types.findLast((t) =>
+      ['text/uri-list', 'text/plain'].includes(t),
+    );
     for (const uri of event_.dataTransfer
       .getData(type)
       .split('\n')
@@ -661,7 +662,7 @@ export class Transmission extends EventTarget {
     const { files } = event_.dataTransfer;
 
     if (files.length > 0) {
-      this.openDialog = new OpenDialog(this, this.remote, '', files);
+      this.setCurrentPopup(new OpenDialog(this, this.remote, '', files));
     }
     event_.preventDefault();
     return false;
@@ -1034,9 +1035,6 @@ TODO: fix this when notifications get fixed
 
     this._updateFilterSelect();
 
-    clearTimeout(this.refilterTimer);
-    delete this.refilterTimer;
-
     if (rebuildEverything) {
       while (list.firstChild) {
         list.firstChild.remove();
@@ -1134,13 +1132,6 @@ TODO: fix this when notifications get fixed
     // update our implementation fields
     this._rows = rows;
     this.dirtyTorrents.clear();
-
-    // set the odd/even property
-    for (const [index, e] of rows.map((row) => row.getElement()).entries()) {
-      const even = index % 2 === 0;
-      e.classList.toggle('even', even);
-      e.classList.toggle('odd', !even);
-    }
 
     this._updateStatusbar();
     if (

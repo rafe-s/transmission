@@ -193,7 +193,7 @@ public:
         if (curl_ssl_verify)
         {
             auto const* bundle = std::empty(curl_ca_bundle) ? "none" : curl_ca_bundle.c_str();
-            tr_logAddInfo(
+            tr_logAddInfo( //
                 fmt::format(
                     fmt::runtime(_("Will verify tracker certs using envvar CURL_CA_BUNDLE: {bundle}")),
                     fmt::arg("bundle", bundle)));
@@ -494,7 +494,7 @@ public:
             (void)curl_easy_getinfo(task->easy(), CURLINFO_RESPONSE_CODE, &code);
             if (code != NoResponseCode && code != PartialContentResponseCode)
             {
-                tr_logAddWarn(
+                tr_logAddWarn( //
                     fmt::format(
                         fmt::runtime(
                             _("Couldn't fetch '{url}': expected HTTP response code {expected_code}, got {actual_code}")),

@@ -133,7 +133,7 @@ bool tr_torrentSetMetainfoFromFile(tr_torrent* tor, tr_torrent_metainfo const* m
     tor->use_metainfo_from_file(metainfo, filename, &error);
     if (error)
     {
-        tor->error().set_local_error(
+        tor->error().set_local_error( //
             fmt::format(
                 fmt::runtime(_("Couldn't use metainfo from '{path}' for '{magnet}': {error} ({error_code})")),
                 fmt::arg("path", filename),
@@ -717,7 +717,7 @@ void tr_torrentRemoveInSessionThread(
             ok = false;
             tor->is_deleting_ = false;
 
-            tor->error().set_local_error(
+            tor->error().set_local_error( //
                 fmt::format(
                     fmt::runtime(_("Couldn't remove all torrent files: {error} ({error_code})")),
                     fmt::arg("error", error.message()),
@@ -1003,7 +1003,7 @@ void tr_torrent::init(tr_ctor const& ctor)
 
         if (error)
         {
-            this->error().set_local_error(
+            this->error().set_local_error( //
                 fmt::format(
                     fmt::runtime(_("Couldn't save '{path}': {error} ({error_code})")),
                     fmt::arg("path", file_path),
@@ -1102,7 +1102,7 @@ void tr_torrent::set_location_in_session_thread(std::string_view const path, boo
         ok = files().move(current_dir(), path, name(), &error);
         if (error)
         {
-            this->error().set_local_error(
+            this->error().set_local_error( //
                 fmt::format(
                     fmt::runtime(_("Couldn't move '{old_path}' to '{path}': {error} ({error_code})")),
                     fmt::arg("old_path", current_dir()),
@@ -1994,7 +1994,7 @@ bool tr_torrent::set_announce_list(tr_announce_list announce_list)
 
     if (save_error.has_value())
     {
-        error().set_local_error(
+        error().set_local_error( //
             fmt::format(
                 fmt::runtime(_("Couldn't save '{path}': {error} ({error_code})")),
                 fmt::arg("path", filename),

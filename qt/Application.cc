@@ -71,21 +71,21 @@ void initUnits()
 {
     using Config = libtransmission::Values::Config;
 
-    Config::Speed = { Config::Base::Kilo,
+    Config::speed = { Config::Base::Kilo,
                       QObject::tr("B/s").toStdString(),
                       QObject::tr("kB/s").toStdString(),
                       QObject::tr("MB/s").toStdString(),
                       QObject::tr("GB/s").toStdString(),
                       QObject::tr("TB/s").toStdString() };
 
-    Config::Memory = { Config::Base::Kibi,
+    Config::memory = { Config::Base::Kibi,
                        QObject::tr("B").toStdString(),
                        QObject::tr("KiB").toStdString(),
                        QObject::tr("MiB").toStdString(),
                        QObject::tr("GiB").toStdString(),
                        QObject::tr("TiB").toStdString() };
 
-    Config::Storage = { Config::Base::Kilo,
+    Config::storage = { Config::Base::Kilo,
                         QObject::tr("B").toStdString(),
                         QObject::tr("kB").toStdString(),
                         QObject::tr("MB").toStdString(),
@@ -529,9 +529,10 @@ bool Application::notifyApp(QString const& title, QString const& body, QStringLi
         args.append(title); // summary
         args.append(body); // body
         args.append(actions);
-        args.append(QVariantMap{ {
-            std::make_pair(QStringLiteral("category"), QVariant{ QStringLiteral("transfer.complete") }),
-        } }); // hints
+        args.append(
+            QVariantMap{ {
+                std::make_pair(QStringLiteral("category"), QVariant{ QStringLiteral("transfer.complete") }),
+            } }); // hints
         args.append(static_cast<int32_t>(-1)); // use the default timeout period
         m.setArguments(args);
         QDBusReply<quint32> const reply_msg = bus.call(m);
@@ -551,10 +552,9 @@ bool Application::notifyApp(QString const& title, QString const& body, QStringLi
 #ifdef QT_DBUS_LIB
 void Application::onNotificationActionInvoked(quint32 /* notification_id */, QString action_key)
 {
-    static QRegularExpression const start_now_regex{ QStringLiteral(R"rgx(start-now\((\d+)\))rgx") };
+    static QRegularExpression const StartNowRegex{ QStringLiteral(R"rgx(start-now\((\d+)\))rgx") };
 
-    auto const match = start_now_regex.match(action_key);
-    if (match.hasMatch())
+    if (auto const match = StartNowRegex.match(action_key); match.hasMatch())
     {
         int const torrent_id = match.captured(1).toInt();
         session_->startTorrentsNow({ torrent_id });

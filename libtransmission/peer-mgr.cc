@@ -23,7 +23,7 @@
 #include <small/map.hpp>
 #include <small/vector.hpp>
 
-#include <fmt/core.h>
+#include <fmt/format.h>
 
 #define LIBTRANSMISSION_PEER_MODULE
 #include "libtransmission/transmission.h"
@@ -75,12 +75,13 @@ private:
             return {};
         }
 
-        auto info = TorrentInfo{};
-        info.info_hash = tor->info_hash();
-        info.client_peer_id = tor->peer_id();
-        info.id = tor->id();
-        info.is_done = tor->is_done();
-        return info;
+        return TorrentInfo{
+            tor->info_hash(), // info_hash
+            tor->peer_id(), // client_peer_id
+            tor->id(), // id
+            tor->is_done(), // is_done
+            tor->is_running() // is_running
+        };
     }
 
 public:
@@ -314,6 +315,7 @@ public:
         [[nodiscard]] bool client_has_piece(tr_piece_index_t piece) const override;
         [[nodiscard]] bool client_wants_piece(tr_piece_index_t piece) const override;
         [[nodiscard]] bool is_sequential_download() const override;
+        [[nodiscard]] tr_piece_index_t sequential_download_from_piece() const override;
         [[nodiscard]] uint8_t count_active_requests(tr_block_index_t block) const override;
         [[nodiscard]] size_t count_piece_replication(tr_piece_index_t piece) const override;
         [[nodiscard]] tr_block_span_t block_span(tr_piece_index_t piece) const override;
@@ -347,6 +349,8 @@ public:
             libtransmission::SimpleObservable<tr_torrent*, tr_peer*, tr_block_span_t>::Observer observer) override;
         [[nodiscard]] libtransmission::ObserverTag observe_sequential_download_changed(
             libtransmission::SimpleObservable<tr_torrent*, bool>::Observer observer) override;
+        [[nodiscard]] libtransmission::ObserverTag observe_sequential_download_from_piece_changed(
+            libtransmission::SimpleObservable<tr_torrent*, tr_piece_index_t>::Observer observer) override;
 
     private:
         tr_torrent& tor_;
@@ -467,7 +471,7 @@ public:
         tr_peer_from const from)
     {
         TR_ASSERT(socket_address.is_valid());
-        TR_ASSERT(from < TR_PEER_FROM__MAX);
+        TR_ASSERT(from < TR_PEER_FROM_N_TYPES);
 
         auto peer_info = get_existing_peer_info(socket_address);
         if (peer_info)
@@ -940,6 +944,11 @@ bool tr_swarm::WishlistMediator::is_sequential_download() const
     return tor_.is_sequential_download();
 }
 
+tr_piece_index_t tr_swarm::WishlistMediator::sequential_download_from_piece() const
+{
+    return tor_.sequential_download_from_piece();
+}
+
 uint8_t tr_swarm::WishlistMediator::count_active_requests(tr_block_index_t block) const
 {
     auto const op = [block](uint8_t acc, auto const& peer)
@@ -1063,6 +1072,12 @@ libtransmission::ObserverTag tr_swarm::WishlistMediator::observe_sequential_down
     return tor_.sequential_download_changed_.observe(std::move(observer));
 }
 
+libtransmission::ObserverTag tr_swarm::WishlistMediator::observe_sequential_download_from_piece_changed(
+    libtransmission::SimpleObservable<tr_torrent*, tr_piece_index_t>::Observer observer)
+{
+    return tor_.sequential_download_from_piece_changed_.observe(std::move(observer));
+}
+
 // ---
 
 struct tr_peerMgr
@@ -1173,6 +1188,11 @@ private:
             for (auto* const peer : tor->swarm->peers)
             {
                 peer->peer_info->set_blocklisted_dirty();
+                if (peer->peer_info->is_blocklisted(blocklists_))
+                {
+                    peer->disconnect_soon();
+                    tr_logAddDebugTor(tor, fmt::format("Peer {} blocked in blocklists update", peer->display_name()));
+                }
             }
         }
     }
@@ -1247,7 +1267,7 @@ void create_bit_torrent_peer(
     tr_torrent& tor,
     std::shared_ptr<tr_peerIo> io,
     std::shared_ptr<tr_peer_info> peer_info,
-    tr_interned_string client)
+    tr_peer_id_t peer_id)
 {
     TR_ASSERT(peer_info);
     TR_ASSERT(tor.swarm != nullptr);
@@ -1255,7 +1275,7 @@ void create_bit_torrent_peer(
     tr_swarm* swarm = tor.swarm;
 
     auto* const
-        msgs = tr_peerMsgs::create(tor, std::move(peer_info), std::move(io), client, &tr_swarm::peer_callback_bt, swarm);
+        msgs = tr_peerMsgs::create(tor, std::move(peer_info), std::move(io), peer_id, &tr_swarm::peer_callback_bt, swarm);
     swarm->peers.push_back(msgs);
 
     ++swarm->stats.peer_count;
@@ -1284,7 +1304,12 @@ void create_bit_torrent_peer(
         info->destroy_handshake();
     }
 
-    if (!result.is_connected || swarm == nullptr || !swarm->is_running)
+    if (swarm == nullptr || !swarm->is_running)
+    {
+        return false;
+    }
+
+    if (!result.is_connected)
     {
         if (info && !info->is_connected())
         {
@@ -1342,16 +1367,8 @@ void create_bit_torrent_peer(
         return false;
     }
 
-    auto client = tr_interned_string{};
-    if (result.peer_id)
-    {
-        auto buf = std::array<char, 128>{};
-        tr_clientForId(std::data(buf), sizeof(buf), *result.peer_id);
-        client = tr_interned_string{ tr_quark_new(std::data(buf)) };
-    }
-
     result.io->set_bandwidth(&swarm->tor->bandwidth());
-    create_bit_torrent_peer(*swarm->tor, result.io, std::move(info), client);
+    create_bit_torrent_peer(*swarm->tor, result.io, std::move(info), result.peer_id.value_or(tr_peer_id_t{}));
 
     return true;
 }
@@ -1450,6 +1467,64 @@ std::vector<tr_pex> tr_pex::from_compact_ipv6(
     }
 
     return pex;
+}
+
+tr_variant::Map tr_pex::to_variant() const
+{
+    auto pex = tr_variant::Map{ 2 };
+
+    auto buf = std::array<char, tr_socket_address::CompactSockAddrMaxBytes>{};
+    auto* const buf_data = std::data(buf);
+    auto* const begin = reinterpret_cast<std::byte*>(buf_data);
+    auto* const end = to_compact(begin);
+
+    pex.try_emplace(TR_KEY_socket_address, std::string_view{ buf_data, static_cast<size_t>(end - begin) });
+    pex.try_emplace(TR_KEY_flags, flags);
+
+    return pex;
+}
+
+std::vector<tr_pex> tr_pex::from_variant(tr_variant const* const var, size_t const n_var)
+{
+    auto pex_vec = std::vector<tr_pex>{};
+    pex_vec.reserve(n_var);
+    for (size_t i = 0; i < n_var; ++i)
+    {
+        auto* const map = var[i].get_if<tr_variant::Map>();
+        if (map == nullptr)
+        {
+            continue;
+        }
+
+        auto sockaddr = map->value_if<std::string_view>(TR_KEY_socket_address);
+        if (!sockaddr)
+        {
+            continue;
+        }
+
+        auto pex = tr_pex{};
+        auto* const compact = reinterpret_cast<std::byte const*>(std::data(*sockaddr));
+        switch (std::size(*sockaddr))
+        {
+        case tr_socket_address::CompactSockAddrBytes[TR_AF_INET]:
+            pex.socket_address = tr_socket_address::from_compact_ipv4(compact).first;
+            break;
+
+        case tr_socket_address::CompactSockAddrBytes[TR_AF_INET6]:
+            pex.socket_address = tr_socket_address::from_compact_ipv6(compact).first;
+            break;
+
+        default:
+            TR_ASSERT(false);
+            continue;
+        }
+
+        pex.flags = static_cast<uint8_t>(map->value_if<int64_t>(TR_KEY_flags).value_or(0));
+
+        pex_vec.emplace_back(std::move(pex));
+    }
+
+    return pex_vec;
 }
 
 // ---
@@ -1690,6 +1765,7 @@ namespace peer_stat_helpers
 
     addr.display_name(stats.addr, sizeof(stats.addr));
     stats.client = peer->user_agent().c_str();
+    stats.peer_id = peer->peer_id();
     stats.port = port.host();
     stats.from = peer->peer_info->from_first();
     stats.progress = peer->percent_done();
@@ -1791,21 +1867,14 @@ tr_peer_stat* tr_peerMgrPeerStats(tr_torrent const* tor, size_t* setme_count)
     auto* const ret = new tr_peer_stat[n];
 
     // TODO: re-implement as a callback solution (similar to tr_sessionSetCompletenessCallback) in case present call to run_in_session_thread is causing hangs when the peers info window is displayed.
-    auto done_promise = std::promise<void>{};
-    auto done_future = done_promise.get_future();
-    tor->session->run_in_session_thread(
-        [&peers, &ret, &done_promise]()
-        {
-            auto const now = tr_time();
-            auto const now_msec = tr_time_msec();
-            std::transform(
-                std::begin(peers),
-                std::end(peers),
-                ret,
-                [&now, &now_msec](auto const* peer) { return peer_stat_helpers::get_peer_stats(peer, now, now_msec); });
-            done_promise.set_value();
-        });
-    done_future.wait();
+    auto const lock = tor->unique_lock();
+    auto const now = tr_time();
+    auto const now_msec = tr_time_msec();
+    std::transform(
+        std::begin(peers),
+        std::end(peers),
+        ret,
+        [&now, &now_msec](auto const* peer) { return peer_stat_helpers::get_peer_stats(peer, now, now_msec); });
 
     *setme_count = n;
     return ret;
@@ -2516,7 +2585,7 @@ namespace connect_helpers
 
     /* Prefer peers that we got from more trusted sources.
      * lower `fromBest` values indicate more trusted sources */
-    score = addValToKey(score, 4U, peer_info.from_best()); // TODO(tearfur): use std::bit_width(TR_PEER_FROM__MAX - 1)
+    score = addValToKey(score, 4U, peer_info.from_best()); // TODO(tearfur): use std::bit_width(TR_PEER_FROM_N_TYPES - 1)
 
     /* salt */
     score = addValToKey(score, 8U, salt);

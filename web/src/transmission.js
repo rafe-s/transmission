@@ -31,10 +31,8 @@ export class Transmission extends EventTarget {
 
     // Initialize the helper classes
     this.action_manager = action_manager;
-    this.max_popups = 2;
     this.notifications = notifications;
     this.prefs = prefs;
-    this.popup = Array.from({ length: this.max_popups });
     this.remote = new Remote(this);
 
     this.addEventListener('torrent-selection-changed', (event_) =>
@@ -51,8 +49,13 @@ export class Transmission extends EventTarget {
     this.refilterSoon = debounce(() => this._refilter(false));
     this.refilterAllSoon = debounce(() => this._refilter(true));
 
-    this.isTouch = 'ontouchstart' in window;
-    this.busyclick = false;
+    this.pointer_device = Object.seal({
+      is_touch_device: 'ontouchstart' in globalThis,
+      long_press_callback: null,
+      x: 0,
+      y: 0,
+    });
+    this.popup = Array.from({ length: Transmission.max_popups }).fill(null);
 
     // listen to actions
     // TODO: consider adding a mutator listener here to see dynamic additions
@@ -135,8 +138,10 @@ export class Transmission extends EventTarget {
           this.setCurrentPopup(new MoveDialog(this, this.remote));
           break;
         case 'show-overflow-menu':
-          if (this.popup[1] instanceof OverflowMenu) {
-            this.popup[1].close();
+          if (
+            this.popup[Transmission.default_popup_level] instanceof OverflowMenu
+          ) {
+            this.popup[Transmission.default_popup_level].close();
           } else {
             this.setCurrentPopup(
               new OverflowMenu(
@@ -195,7 +200,7 @@ export class Transmission extends EventTarget {
     document.addEventListener('keyup', this._keyUp.bind(this));
     e = document.querySelector('#torrent-container');
     e.addEventListener('click', (e_) => {
-      if (this.popup[this.max_popups - 1]) {
+      if (this.popup[Transmission.default_popup_level]) {
         this.setCurrentPopup(null);
       }
       if (e_.target === e_.currentTarget) {
@@ -216,8 +221,27 @@ export class Transmission extends EventTarget {
       torrent_list: document.querySelector('#torrent-list'),
     };
 
-    const rightc = (event_) => {
-      if (this.isTouch && event_.touches.length > 1) {
+    const context_menu = () => {
+      // open context menu
+      const popup = new ContextMenu(this.action_manager);
+      this.setCurrentPopup(popup);
+
+      const boundingElement = document.querySelector('#torrent-container');
+      const bounds = boundingElement.getBoundingClientRect();
+      const x = Math.min(
+        this.pointer_device.x,
+        bounds.right + globalThis.scrollX - popup.root.clientWidth,
+      );
+      const y = Math.min(
+        this.pointer_device.y,
+        bounds.bottom + globalThis.scrollY - popup.root.clientHeight,
+      );
+      popup.root.style.left = `${Math.max(x, 0)}px`;
+      popup.root.style.top = `${Math.max(y, 0)}px`;
+    };
+
+    const right_click = (event_) => {
+      if (this.pointer_device.is_touch_device && event_.touches.length > 1) {
         return;
       }
 
@@ -231,55 +255,57 @@ export class Transmission extends EventTarget {
         this._setSelectedRow(row);
       }
 
-      // open context menu
-      const popup = new ContextMenu(this.action_manager);
-      this.setCurrentPopup(popup);
-
-      const boundingElement = document.querySelector('#torrent-container');
-      const bounds = boundingElement.getBoundingClientRect();
-      const x = Math.min(
-        this.isTouch ? event_.touches[0].clientX : event_.x,
-        bounds.x + bounds.width - popup.root.clientWidth,
-      );
-      const y = Math.min(
-        this.isTouch ? event_.touches[0].clientY : event_.y,
-        bounds.y + bounds.height - popup.root.clientHeight,
-      );
-      popup.root.style.left = `${x > 0 ? x : 0}px`;
-      popup.root.style.top = `${y > 0 ? y : 0}px`;
+      context_menu();
       event_.preventDefault();
     };
 
-    if (this.isTouch) {
+    if (this.pointer_device.is_touch_device) {
+      const touch = this.pointer_device;
       this.elements.torrent_list.addEventListener('touchstart', (event_) => {
-        if (this.busyclick) {
-          clearTimeout(this.busyclick);
-          this.busyclick = false;
+        touch.x = event_.touches[0].pageX;
+        touch.y = event_.touches[0].pageY;
+
+        if (touch.long_press_callback) {
+          clearTimeout(touch.long_press_callback);
+          touch.long_press_callback = null;
         } else {
-          this.busyclick = setTimeout(rightc.bind(this), 500, event_);
+          touch.long_press_callback = setTimeout(
+            right_click.bind(this),
+            500,
+            event_,
+          );
         }
       });
       this.elements.torrent_list.addEventListener('touchend', () => {
-        clearTimeout(this.busyclick);
-        this.busyclick = false;
+        clearTimeout(touch.long_press_callback);
+        touch.long_press_callback = null;
         setTimeout(() => {
-          if (this.popup[1]) {
-            this.popup[1].root.style.pointerEvents = 'auto';
+          const popup = this.popup[Transmission.default_popup_level];
+          if (popup) {
+            popup.root.style.pointerEvents = 'auto';
           }
         }, 1);
       });
-      this.elements.torrent_list.addEventListener('touchmove', () => {
-        clearTimeout(this.busyclick);
-        this.busyclick = false;
+      this.elements.torrent_list.addEventListener('touchmove', (event_) => {
+        touch.x = event_.touches[0].pageX;
+        touch.y = event_.touches[0].pageY;
+
+        clearTimeout(touch.long_press_callback);
+        touch.long_press_callback = null;
       });
       this.elements.torrent_list.addEventListener('contextmenu', (event_) => {
         event_.preventDefault();
       });
     } else {
+      this.elements.torrent_list.addEventListener('mousemove', (event_) => {
+        this.pointer_device.x = event_.pageX;
+        this.pointer_device.y = event_.pageY;
+      });
       this.elements.torrent_list.addEventListener('contextmenu', (event_) => {
-        rightc(event_);
-        if (this.popup[1]) {
-          this.popup[1].root.style.pointerEvents = 'auto';
+        right_click(event_);
+        const popup = this.popup[Transmission.default_popup_level];
+        if (popup) {
+          popup.root.style.pointerEvents = 'auto';
         }
       });
     }
@@ -302,21 +328,21 @@ export class Transmission extends EventTarget {
 
   _openTorrentFromUrl() {
     setTimeout(() => {
-      const addTorrent = new URLSearchParams(window.location.search).get(
+      const addTorrent = new URLSearchParams(globalThis.location.search).get(
         'addtorrent',
       );
       if (addTorrent) {
         this.setCurrentPopup(new OpenDialog(this, this.remote, addTorrent));
-        const newUrl = new URL(window.location);
+        const newUrl = new URL(globalThis.location);
         newUrl.search = '';
-        window.history.pushState('', '', newUrl.toString());
+        globalThis.history.pushState('', '', newUrl.toString());
       }
     }, 0);
   }
 
   loadDaemonPrefs() {
     this.remote.loadDaemonPrefs((data) => {
-      this.session_properties = data.arguments;
+      this.session_properties = data.result;
       this._openTorrentFromUrl();
     });
   }
@@ -359,8 +385,7 @@ export class Transmission extends EventTarget {
       }
       case Prefs.ContrastMode: {
         // Add custom class to the body/html element to get the appropriate contrast color scheme
-        document.body.classList.remove('contrast-more');
-        document.body.classList.remove('contrast-less');
+        document.body.classList.remove('contrast-more', 'contrast-less');
         document.body.classList.add(`contrast-${value}`);
         // this.refilterAllSoon();
         break;
@@ -389,6 +414,14 @@ export class Transmission extends EventTarget {
 
   /// UTILITIES
 
+  static get max_popups() {
+    return 2;
+  }
+
+  static get default_popup_level() {
+    return Transmission.max_popups - 1;
+  }
+
   _getAllTorrents() {
     return Object.values(this._torrents);
   }
@@ -399,8 +432,8 @@ export class Transmission extends EventTarget {
 
   seedRatioLimit() {
     const p = this.session_properties;
-    if (p && p.seedRatioLimited) {
-      return p.seedRatioLimit;
+    if (p && p.seed_ratio_limited) {
+      return p.seed_ratio_limit;
     }
     return -1;
   }
@@ -630,7 +663,7 @@ export class Transmission extends EventTarget {
   }
 
   shouldAddedTorrentsStart() {
-    return this.session_properties['start-added-torrents'];
+    return this.session_properties.start_added_torrents;
   }
 
   _drop(event_) {
@@ -765,7 +798,7 @@ TODO: fix this when notifications get fixed
 
   refreshTorrents() {
     const fields = ['id', ...Torrent.Fields.Stats];
-    this.updateTorrents('recently-active', fields);
+    this.updateTorrents('recently_active', fields);
   }
 
   _initializeTorrents() {
@@ -777,22 +810,8 @@ TODO: fix this when notifications get fixed
     const meta_key = event_.metaKey || event_.ctrlKey,
       { row } = event_.currentTarget;
 
-    if (this.popup[this.max_popups - 1]) {
+    if (this.popup[Transmission.default_popup_level]) {
       this.setCurrentPopup(null);
-    }
-
-    // handle the per-row pause/resume button
-    if (event_.target.classList.contains('torrent-pauseresume-button')) {
-      switch (event_.target.dataset.action) {
-        case 'pause':
-          this._stopTorrents([row.getTorrent()]);
-          break;
-        case 'resume':
-          this._startTorrents([row.getTorrent()]);
-          break;
-        default:
-          break;
-      }
     }
 
     // Prevents click carrying to parent element
@@ -802,7 +821,7 @@ TODO: fix this when notifications get fixed
     if (event_.shiftKey) {
       this._selectRange(row);
       // Need to deselect any selected text
-      window.focus();
+      globalThis.focus();
 
       // Apple-Click, not selected
     } else if (!row.isSelected() && meta_key) {
@@ -921,7 +940,7 @@ TODO: fix this when notifications get fixed
   ///
 
   _updateGuiFromSession(o) {
-    const [, version, checksum] = o.version.match(/(.*)\s\(([\da-f]+)\)/);
+    const [, version, checksum] = o.version.match(/^(.*)\s\(([\da-f]+)\)/);
     this.version_info = {
       checksum,
       version,
@@ -1007,6 +1026,9 @@ TODO: fix this when notifications get fixed
 
     let filter_text = null;
     let labels = null;
+    // TODO: This regex is wrong and is about to be removed in https://github.com/transmission/transmission/pull/7008,
+    // so it is left alone for now.
+    // eslint-disable-next-line sonarjs/slow-regex
     const m = /^labels:([\w,-\s]*)(.*)$/.exec(this.filterText);
     if (m) {
       filter_text = m[2].trim();
@@ -1157,13 +1179,11 @@ TODO: fix this when notifications get fixed
 
   ///
 
-  setCurrentPopup(popup, level = this.max_popups - 1) {
-    let index = level;
-    while (index < this.max_popups) {
+  setCurrentPopup(popup, level = Transmission.default_popup_level) {
+    for (let index = level; index < Transmission.max_popups; index++) {
       if (this.popup[index]) {
         this.popup[index].close();
       }
-      index++;
     }
 
     this.popup[level] = popup;

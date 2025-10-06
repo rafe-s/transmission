@@ -33,7 +33,7 @@
 #include <gtkmm/treemodelsort.h>
 #include <gtkmm/treeview.h>
 
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <fmt/ostream.h>
 
 #include <array>
@@ -65,9 +65,11 @@ class MessageLogWindow::Impl
 {
 public:
     Impl(MessageLogWindow& window, Glib::RefPtr<Gtk::Builder> const& builder, Glib::RefPtr<Session> const& core);
+    Impl(Impl&&) = delete;
+    Impl(Impl const&) = delete;
+    Impl& operator=(Impl&&) = delete;
+    Impl& operator=(Impl const&) = delete;
     ~Impl();
-
-    TR_DISABLE_COPY_MOVE(Impl)
 
 private:
     bool onRefresh();
@@ -239,7 +241,7 @@ void MessageLogWindow::Impl::doSave(std::string const& filename)
         auto w = std::make_shared<Gtk::MessageDialog>(
             window_,
             fmt::format(
-                _("Couldn't save '{path}': {error} ({error_code})"),
+                fmt::runtime(_("Couldn't save '{path}': {error} ({error_code})")),
                 fmt::arg("path", Glib::filename_to_utf8(filename)),
                 fmt::arg("error", e.code().message()),
                 fmt::arg("error_code", e.code().value())),
@@ -489,9 +491,10 @@ MessageLogWindow::Impl::Impl(
     , filter_(Gtk::TreeModelFilter::create(store_))
     , sort_(Gtk::TreeModelSort::create(filter_))
     , maxLevel_(static_cast<tr_log_level>(gtr_pref_int_get(TR_KEY_message_level)))
-    , refresh_tag_(Glib::signal_timeout().connect_seconds(
-          sigc::mem_fun(*this, &Impl::onRefresh),
-          SECONDARY_WINDOW_REFRESH_INTERVAL_SECONDS))
+    , refresh_tag_(
+          Glib::signal_timeout().connect_seconds(
+              sigc::mem_fun(*this, &Impl::onRefresh),
+              SECONDARY_WINDOW_REFRESH_INTERVAL_SECONDS))
 {
     /**
     ***  toolbar

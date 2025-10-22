@@ -26,7 +26,7 @@
 
 #include <event2/event.h>
 
-#include <fmt/core.h>
+#include <fmt/format.h>
 
 #include <libtransmission/transmission.h>
 
@@ -75,76 +75,86 @@ char constexpr Usage[] = "Transmission " LONG_VERSION_STRING
                          "\n"
                          "Usage: transmission-daemon [options]";
 
-// --- Config File
+using Arg = tr_option::Arg;
+auto constexpr Options = std::array<tr_option, 47>{ {
+    { 'a', "allowed", "Allowed IP addresses. (Default: " TR_DEFAULT_RPC_WHITELIST ")", "a", Arg::Required, "<list>" },
+    { 'b', "blocklist", "Enable peer blocklists", "b", Arg::None, nullptr },
+    { 'B', "no-blocklist", "Disable peer blocklists", "B", Arg::None, nullptr },
+    { 'c', "watch-dir", "Where to watch for new torrent files", "c", Arg::Required, "<directory>" },
+    { 'C', "no-watch-dir", "Disable the watch-dir", "C", Arg::None, nullptr },
+    { 941, "incomplete-dir", "Where to store new torrents until they're complete", nullptr, Arg::Required, "<directory>" },
+    { 942, "no-incomplete-dir", "Don't store incomplete torrents in a different location", nullptr, Arg::None, nullptr },
+    { 'd', "dump-settings", "Dump the settings and exit", "d", Arg::None, nullptr },
+    { 943, "default-trackers", "Trackers for public torrents to use automatically", nullptr, Arg::Required, "<list>" },
+    { 'e', "logfile", "Dump the log messages to this filename", "e", Arg::Required, "<filename>" },
+    { 'f', "foreground", "Run in the foreground instead of daemonizing", "f", Arg::None, nullptr },
+    { 'g', "config-dir", "Where to look for configuration files", "g", Arg::Required, "<path>" },
+    { 'p', "port", "RPC port (Default: " TR_DEFAULT_RPC_PORT_STR ")", "p", Arg::Required, "<port>" },
+    { 't', "auth", "Require authentication", "t", Arg::None, nullptr },
+    { 'T', "no-auth", "Don't require authentication", "T", Arg::None, nullptr },
+    { 'u', "username", "Set username for authentication", "u", Arg::Required, "<username>" },
+    { 'v', "password", "Set password for authentication", "v", Arg::Required, "<password>" },
+    { 'V', "version", "Show version number and exit", "V", Arg::None, nullptr },
+    { 810,
+      "log-level",
+      "Must be 'critical', 'error', 'warn', 'info', 'debug', or 'trace'.",
+      nullptr,
+      Arg::Required,
+      "<level>" },
+    { 811, "log-error", "Deprecated. Use --log-level=error", nullptr, Arg::None, nullptr },
+    { 812, "log-info", "Deprecated. Use --log-level=info", nullptr, Arg::None, nullptr },
+    { 813, "log-debug", "Deprecated. Use --log-level=debug", nullptr, Arg::None, nullptr },
+    { 'w', "download-dir", "Where to save downloaded data", "w", Arg::Required, "<path>" },
+    { 800, "paused", "Pause all torrents on startup", nullptr, Arg::None, nullptr },
+    { 'o', "dht", "Enable distributed hash tables (DHT)", "o", Arg::None, nullptr },
+    { 'O', "no-dht", "Disable distributed hash tables (DHT)", "O", Arg::None, nullptr },
+    { 'y', "lpd", "Enable local peer discovery (LPD)", "y", Arg::None, nullptr },
+    { 'Y', "no-lpd", "Disable local peer discovery (LPD)", "Y", Arg::None, nullptr },
+    { 830, "utp", "Enable µTP for peer connections", nullptr, Arg::None, nullptr },
+    { 831, "no-utp", "Disable µTP for peer connections", nullptr, Arg::None, nullptr },
+    { 'P', "peerport", "Port for incoming peers (Default: " TR_DEFAULT_PEER_PORT_STR ")", "P", Arg::Required, "<port>" },
+    { 'm', "portmap", "Enable portmapping via NAT-PMP or UPnP", "m", Arg::None, nullptr },
+    { 'M', "no-portmap", "Disable portmapping", "M", Arg::None, nullptr },
+    { 'L',
+      "peerlimit-global",
+      "Maximum overall number of peers (Default: " TR_DEFAULT_PEER_LIMIT_GLOBAL_STR ")",
+      "L",
+      Arg::Required,
+      "<limit>" },
+    { 'l',
+      "peerlimit-torrent",
+      "Maximum number of peers per torrent (Default: " TR_DEFAULT_PEER_LIMIT_TORRENT_STR ")",
+      "l",
+      Arg::Required,
+      "<limit>" },
+    { 910, "encryption-required", "Encrypt all peer connections", "er", Arg::None, nullptr },
+    { 911, "encryption-preferred", "Prefer encrypted peer connections", "ep", Arg::None, nullptr },
+    { 912, "encryption-tolerated", "Prefer unencrypted peer connections", "et", Arg::None, nullptr },
+    { 'i', "bind-address-ipv4", "Where to listen for peer connections", "i", Arg::Required, "<ipv4 addr>" },
+    { 'I', "bind-address-ipv6", "Where to listen for peer connections", "I", Arg::Required, "<ipv6 addr>" },
+    { 'r', "rpc-bind-address", "Where to listen for RPC connections", "r", Arg::Required, "<ip addr>" },
+    { 953,
+      "global-seedratio",
+      "All torrents, unless overridden by a per-torrent setting, should seed until a specific ratio",
+      "gsr",
+      Arg::Required,
+      "ratio" },
+    { 954,
+      "no-global-seedratio",
+      "All torrents, unless overridden by a per-torrent setting, should seed regardless of ratio",
+      "GSR",
+      Arg::None,
+      nullptr },
+    { 994, "sequential-download", "Enable sequential download by default", "seq", Arg::None, nullptr },
+    { 995, "no-sequential-download", "Disable sequential download by default", "SEQ", Arg::None, nullptr },
+    { 'x', "pid-file", "Enable PID file", "x", Arg::Required, "<pid-file>" },
+    { 0, nullptr, nullptr, nullptr, Arg::None, nullptr },
+} };
+static_assert(Options[std::size(Options) - 2].val != 0);
+} // namespace
 
-auto constexpr Options = std::array<tr_option, 45>{
-    { { 'a', "allowed", "Allowed IP addresses. (Default: " TR_DEFAULT_RPC_WHITELIST ")", "a", true, "<list>" },
-      { 'b', "blocklist", "Enable peer blocklists", "b", false, nullptr },
-      { 'B', "no-blocklist", "Disable peer blocklists", "B", false, nullptr },
-      { 'c', "watch-dir", "Where to watch for new torrent files", "c", true, "<directory>" },
-      { 'C', "no-watch-dir", "Disable the watch-dir", "C", false, nullptr },
-      { 941, "incomplete-dir", "Where to store new torrents until they're complete", nullptr, true, "<directory>" },
-      { 942, "no-incomplete-dir", "Don't store incomplete torrents in a different location", nullptr, false, nullptr },
-      { 'd', "dump-settings", "Dump the settings and exit", "d", false, nullptr },
-      { 943, "default-trackers", "Trackers for public torrents to use automatically", nullptr, true, "<list>" },
-      { 'e', "logfile", "Dump the log messages to this filename", "e", true, "<filename>" },
-      { 'f', "foreground", "Run in the foreground instead of daemonizing", "f", false, nullptr },
-      { 'g', "config-dir", "Where to look for configuration files", "g", true, "<path>" },
-      { 'p', "port", "RPC port (Default: " TR_DEFAULT_RPC_PORT_STR ")", "p", true, "<port>" },
-      { 't', "auth", "Require authentication", "t", false, nullptr },
-      { 'T', "no-auth", "Don't require authentication", "T", false, nullptr },
-      { 'u', "username", "Set username for authentication", "u", true, "<username>" },
-      { 'v', "password", "Set password for authentication", "v", true, "<password>" },
-      { 'V', "version", "Show version number and exit", "V", false, nullptr },
-      { 810, "log-level", "Must be 'critical', 'error', 'warn', 'info', 'debug', or 'trace'.", nullptr, true, "<level>" },
-      { 811, "log-error", "Deprecated. Use --log-level=error", nullptr, false, nullptr },
-      { 812, "log-info", "Deprecated. Use --log-level=info", nullptr, false, nullptr },
-      { 813, "log-debug", "Deprecated. Use --log-level=debug", nullptr, false, nullptr },
-      { 'w', "download-dir", "Where to save downloaded data", "w", true, "<path>" },
-      { 800, "paused", "Pause all torrents on startup", nullptr, false, nullptr },
-      { 'o', "dht", "Enable distributed hash tables (DHT)", "o", false, nullptr },
-      { 'O', "no-dht", "Disable distributed hash tables (DHT)", "O", false, nullptr },
-      { 'y', "lpd", "Enable local peer discovery (LPD)", "y", false, nullptr },
-      { 'Y', "no-lpd", "Disable local peer discovery (LPD)", "Y", false, nullptr },
-      { 830, "utp", "Enable µTP for peer connections", nullptr, false, nullptr },
-      { 831, "no-utp", "Disable µTP for peer connections", nullptr, false, nullptr },
-      { 'P', "peerport", "Port for incoming peers (Default: " TR_DEFAULT_PEER_PORT_STR ")", "P", true, "<port>" },
-      { 'm', "portmap", "Enable portmapping via NAT-PMP or UPnP", "m", false, nullptr },
-      { 'M', "no-portmap", "Disable portmapping", "M", false, nullptr },
-      { 'L',
-        "peerlimit-global",
-        "Maximum overall number of peers (Default: " TR_DEFAULT_PEER_LIMIT_GLOBAL_STR ")",
-        "L",
-        true,
-        "<limit>" },
-      { 'l',
-        "peerlimit-torrent",
-        "Maximum number of peers per torrent (Default: " TR_DEFAULT_PEER_LIMIT_TORRENT_STR ")",
-        "l",
-        true,
-        "<limit>" },
-      { 910, "encryption-required", "Encrypt all peer connections", "er", false, nullptr },
-      { 911, "encryption-preferred", "Prefer encrypted peer connections", "ep", false, nullptr },
-      { 912, "encryption-tolerated", "Prefer unencrypted peer connections", "et", false, nullptr },
-      { 'i', "bind-address-ipv4", "Where to listen for peer connections", "i", true, "<ipv4 addr>" },
-      { 'I', "bind-address-ipv6", "Where to listen for peer connections", "I", true, "<ipv6 addr>" },
-      { 'r', "rpc-bind-address", "Where to listen for RPC connections", "r", true, "<ip addr>" },
-      { 953,
-        "global-seedratio",
-        "All torrents, unless overridden by a per-torrent setting, should seed until a specific ratio",
-        "gsr",
-        true,
-        "ratio" },
-      { 954,
-        "no-global-seedratio",
-        "All torrents, unless overridden by a per-torrent setting, should seed regardless of ratio",
-        "GSR",
-        false,
-        nullptr },
-      { 'x', "pid-file", "Enable PID file", "x", true, "<pid-file>" },
-      { 0, nullptr, nullptr, nullptr, false, nullptr } }
-};
-
+namespace
+{
 [[nodiscard]] std::string getConfigDir(int argc, char const* const* argv)
 {
     int c;
@@ -194,7 +204,7 @@ auto onFileAdded(tr_session* session, std::string_view dirname, std::string_view
         if (!tr_file_read(filename, content, &error))
         {
             tr_logAddWarn(fmt::format(
-                _("Couldn't read '{path}': {error} ({error_code})"),
+                fmt::runtime(_("Couldn't read '{path}': {error} ({error_code})")),
                 fmt::arg("path", basename),
                 fmt::arg("error", error.message()),
                 fmt::arg("error_code", error.code())));
@@ -219,7 +229,7 @@ auto onFileAdded(tr_session* session, std::string_view dirname, std::string_view
 
     if (tr_torrentNew(ctor, nullptr) == nullptr)
     {
-        tr_logAddError(fmt::format(_("Couldn't add torrent file '{path}'"), fmt::arg("path", basename)));
+        tr_logAddError(fmt::format(fmt::runtime(_("Couldn't add torrent file '{path}'")), fmt::arg("path", basename)));
     }
     else
     {
@@ -228,12 +238,12 @@ auto onFileAdded(tr_session* session, std::string_view dirname, std::string_view
 
         if (test && trash)
         {
-            tr_logAddInfo(fmt::format(_("Removing torrent file '{path}'"), fmt::arg("path", basename)));
+            tr_logAddInfo(fmt::format(fmt::runtime(_("Removing torrent file '{path}'")), fmt::arg("path", basename)));
 
             if (auto error = tr_error{}; !tr_sys_path_remove(filename, &error))
             {
                 tr_logAddError(fmt::format(
-                    _("Couldn't remove '{path}': {error} ({error_code})"),
+                    fmt::runtime(_("Couldn't remove '{path}': {error} ({error_code})")),
                     fmt::arg("path", basename),
                     fmt::arg("error", error.message()),
                     fmt::arg("error_code", error.code())));
@@ -487,6 +497,14 @@ bool tr_daemon::parse_args(int argc, char const* const* argv, bool* dump_setting
             tr_variantDictAddStr(&settings_, TR_KEY_default_trackers, optstr);
             break;
 
+        case 994:
+            tr_variantDictAddBool(&settings_, TR_KEY_sequential_download, true);
+            break;
+
+        case 995:
+            tr_variantDictAddBool(&settings_, TR_KEY_sequential_download, false);
+            break;
+
         case 'd':
             *dump_settings = true;
             break;
@@ -634,7 +652,8 @@ bool tr_daemon::parse_args(int argc, char const* const* argv, bool* dump_setting
             }
             else
             {
-                std::cerr << fmt::format(_("Couldn't parse log level '{level}'"), fmt::arg("level", optstr)) << std::endl;
+                std::cerr << fmt::format(fmt::runtime(_("Couldn't parse log level '{level}'")), fmt::arg("level", optstr))
+                          << std::endl;
             }
             break;
 
@@ -695,7 +714,7 @@ void tr_daemon::reconfigure()
         }
 
         configDir = tr_sessionGetConfigDir(my_session_);
-        tr_logAddInfo(fmt::format(_("Reloading settings from '{path}'"), fmt::arg("path", configDir)));
+        tr_logAddInfo(fmt::format(fmt::runtime(_("Reloading settings from '{path}'")), fmt::arg("path", configDir)));
 
         tr_sessionSet(my_session_, load_settings(configDir));
         tr_sessionReloadBlocklists(my_session_);
@@ -719,7 +738,7 @@ int tr_daemon::start([[maybe_unused]] bool foreground)
     {
         auto const error_code = errno;
         auto const errmsg = fmt::format(
-            _("Couldn't initialize daemon: {error} ({error_code})"),
+            fmt::runtime(_("Couldn't initialize daemon: {error} ({error_code})")),
             fmt::arg("error", tr_strerror(error_code)),
             fmt::arg("error_code", error_code));
         printMessage(log_stream_, TR_LOG_ERROR, MyName, errmsg, __FILE__, __LINE__);
@@ -731,7 +750,7 @@ int tr_daemon::start([[maybe_unused]] bool foreground)
     auto const* const cdir = this->config_dir_.c_str();
     auto* session = tr_sessionInit(cdir, true, settings_);
     tr_sessionSetRPCCallback(session, on_rpc_callback, this);
-    tr_logAddInfo(fmt::format(_("Loading settings from '{path}'"), fmt::arg("path", cdir)));
+    tr_logAddInfo(fmt::format(fmt::runtime(_("Loading settings from '{path}'")), fmt::arg("path", cdir)));
     tr_sessionSaveSettings(session, cdir, settings_);
 
     auto sv = std::string_view{};
@@ -752,13 +771,13 @@ int tr_daemon::start([[maybe_unused]] bool foreground)
             auto const out = std::to_string(getpid());
             tr_sys_file_write(fp, std::data(out), std::size(out), nullptr);
             tr_sys_file_close(fp);
-            tr_logAddInfo(fmt::format(_("Saved pidfile '{path}'"), fmt::arg("path", sz_pid_filename)));
+            tr_logAddInfo(fmt::format(fmt::runtime(_("Saved pidfile '{path}'")), fmt::arg("path", sz_pid_filename)));
             pidfile_created = true;
         }
         else
         {
             tr_logAddError(fmt::format(
-                _("Couldn't save '{path}': {error} ({error_code})"),
+                fmt::runtime(_("Couldn't save '{path}': {error} ({error_code})")),
                 fmt::arg("path", sz_pid_filename),
                 fmt::arg("error", error.message()),
                 fmt::arg("error_code", error.code())));
@@ -789,7 +808,7 @@ int tr_daemon::start([[maybe_unused]] bool foreground)
         (void)tr_variantDictFindStrView(&settings_, TR_KEY_watch_dir, &dir);
         if (!std::empty(dir))
         {
-            tr_logAddInfo(fmt::format(_("Watching '{path}' for new torrent files"), fmt::arg("path", dir)));
+            tr_logAddInfo(fmt::format(fmt::runtime(_("Watching '{path}' for new torrent files")), fmt::arg("path", dir)));
 
             auto handler = [session](std::string_view dirname, std::string_view basename)
             {
@@ -834,7 +853,7 @@ int tr_daemon::start([[maybe_unused]] bool foreground)
         {
             auto const error_code = errno;
             tr_logAddError(fmt::format(
-                _("Couldn't create event: {error} ({error_code})"),
+                fmt::runtime(_("Couldn't create event: {error} ({error_code})")),
                 fmt::arg("error", tr_strerror(error_code)),
                 fmt::arg("error_code", error_code)));
             goto CLEANUP;
@@ -844,7 +863,7 @@ int tr_daemon::start([[maybe_unused]] bool foreground)
         {
             auto const error_code = errno;
             tr_logAddError(fmt::format(
-                _("Couldn't add event: {error} ({error_code})"),
+                fmt::runtime(_("Couldn't add event: {error} ({error_code})")),
                 fmt::arg("error", tr_strerror(error_code)),
                 fmt::arg("error_code", error_code)));
             goto CLEANUP;
@@ -858,7 +877,7 @@ int tr_daemon::start([[maybe_unused]] bool foreground)
     {
         auto const error_code = errno;
         tr_logAddError(fmt::format(
-            _("Couldn't launch daemon event loop: {error} ({error_code})"),
+            fmt::runtime(_("Couldn't launch daemon event loop: {error} ({error_code})")),
             fmt::arg("error", tr_strerror(error_code)),
             fmt::arg("error_code", error_code)));
         goto CLEANUP;

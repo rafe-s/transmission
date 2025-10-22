@@ -29,7 +29,7 @@
 #include <sys/socket.h> // sockaddr_storage, AF_INET
 #endif
 
-#include <fmt/core.h>
+#include <fmt/format.h>
 
 #define LIBTRANSMISSION_ANNOUNCER_MODULE
 
@@ -90,7 +90,7 @@ struct tau_scrape_request
     {
         response.scrape_url = in.scrape_url;
         response.row_count = in.info_hash_count;
-        for (int i = 0; i < response.row_count; ++i)
+        for (size_t i = 0; i < response.row_count; ++i)
         {
             response.rows[i].info_hash = in.info_hash[i];
         }
@@ -98,7 +98,7 @@ struct tau_scrape_request
         // build the payload
         payload.add_uint32(TAU_ACTION_SCRAPE);
         payload.add_uint32(transaction_id);
-        for (int i = 0; i < in.info_hash_count; ++i)
+        for (size_t i = 0; i < in.info_hash_count; ++i)
         {
             payload.add(in.info_hash[i]);
         }
@@ -132,7 +132,7 @@ struct tau_scrape_request
 
         if (action == TAU_ACTION_SCRAPE)
         {
-            for (int i = 0; i < response.row_count && std::size(buf) >= sizeof(uint32_t) * 3U; ++i)
+            for (size_t i = 0; i < response.row_count && std::size(buf) >= sizeof(uint32_t) * 3U; ++i)
             {
                 auto& row = response.rows[i];
                 row.seeders = buf.to_uint32();
@@ -371,9 +371,10 @@ struct tau_tracker
         }
         else if (action == TAU_ACTION_ERROR)
         {
-            std::string errmsg = !std::empty(buf) ?
-                buf.to_string() :
-                fmt::format(_("{ip_protocol} connection failed"), fmt::arg("ip_protocol", tr_ip_protocol_to_sv(ip_protocol)));
+            std::string errmsg = !std::empty(buf) ? buf.to_string() :
+                                                    fmt::format(
+                                                        fmt::runtime(_("{ip_protocol} connection failed")),
+                                                        fmt::arg("ip_protocol", tr_ip_protocol_to_sv(ip_protocol)));
             fail_all(true, false, errmsg);
             logdbg(log_name(), std::move(errmsg));
         }
@@ -413,16 +414,7 @@ struct tau_tracker
                     [this](tr_address_type ip_protocol) { return lookup(ip_protocol); },
                     static_cast<tr_address_type>(ipp));
             }
-        }
 
-        // are there any dns requests pending?
-        if (is_dns_pending())
-        {
-            return;
-        }
-
-        for (ipp_t ipp = 0; ipp < NUM_TR_AF_INET_TYPES; ++ipp)
-        {
             auto const ipp_enum = static_cast<tr_address_type>(ipp);
             auto& conn_at = connecting_at[ipp];
             logtrace(
@@ -478,11 +470,6 @@ private:
         return connection_id[ip_protocol] != tau_connection_t{} && now < connection_expiration_time[ip_protocol];
     }
 
-    [[nodiscard]] TR_CONSTEXPR20 bool is_dns_pending() const noexcept
-    {
-        return std::any_of(std::begin(addr_pending_dns_), std::end(addr_pending_dns_), [](auto const& o) { return !!o; });
-    }
-
     [[nodiscard]] TR_CONSTEXPR20 bool has_addr() const noexcept
     {
         return std::any_of(std::begin(addr_), std::end(addr_), [](auto const& o) { return !!o; });
@@ -505,7 +492,7 @@ private:
             logwarn(
                 log_name(),
                 fmt::format(
-                    _("Couldn't look up '{address}:{port}' in {ip_protocol}: {error} ({error_code})"),
+                    fmt::runtime(_("Couldn't look up '{address}:{port}' in {ip_protocol}: {error} ({error_code})")),
                     fmt::arg("address", host),
                     fmt::arg("port", port.host()),
                     fmt::arg("ip_protocol", tr_ip_protocol_to_sv(ip_protocol)),
@@ -588,8 +575,7 @@ private:
 
     void maybe_send_requests(time_t now)
     {
-        TR_ASSERT(!is_dns_pending());
-        if (is_dns_pending() || !has_addr())
+        if (!has_addr())
         {
             return;
         }

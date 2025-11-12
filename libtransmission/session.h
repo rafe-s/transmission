@@ -416,6 +416,7 @@ public:
         bool speed_limit_down_enabled = false;
         bool speed_limit_up_enabled = false;
         bool tcp_enabled = true;
+        bool torrent_complete_verify_enabled = false;
         bool utp_enabled = true;
         double ratio_limit = 2.0;
         size_t cache_size_mbytes = 4U;
@@ -513,6 +514,7 @@ public:
                 { TR_KEY_start_added_torrents, &should_start_added_torrents },
                 { TR_KEY_tcp_enabled, &tcp_enabled },
                 { TR_KEY_torrent_added_verify_mode, &torrent_added_verify_mode },
+                { TR_KEY_torrent_complete_verify_enabled, &torrent_complete_verify_enabled },
                 { TR_KEY_trash_original_torrent_files, &should_delete_source_torrents },
                 { TR_KEY_umask, &umask },
                 { TR_KEY_upload_slots_per_torrent, &upload_slots_per_torrent },
@@ -963,6 +965,11 @@ public:
         return settings().torrent_added_verify_mode == TR_VERIFY_ADDED_FULL;
     }
 
+    [[nodiscard]] constexpr auto shouldFullyVerifyCompleteTorrents() const noexcept
+    {
+        return settings().torrent_complete_verify_enabled;
+    }
+
     [[nodiscard]] constexpr auto shouldDeleteSource() const noexcept
     {
         return settings().should_delete_source_torrents;
@@ -1038,10 +1045,10 @@ public:
         return ip_cache_.set_global_addr(addr);
     }
 
-    [[nodiscard]] std::optional<tr_address> global_source_address(tr_address_type type) const noexcept
+    [[nodiscard]] std::optional<tr_address> source_address(tr_address_type type) const noexcept
     {
         TR_ASSERT(tr_address::is_valid(type));
-        return ip_cache_.global_source_addr(type);
+        return ip_cache_.source_addr(type);
     }
 
     [[nodiscard]] auto speed_limit(tr_direction const dir) const noexcept
@@ -1207,6 +1214,7 @@ private:
     friend void tr_sessionSetAntiBruteForceEnabled(tr_session* session, bool is_enabled);
     friend void tr_sessionSetAntiBruteForceThreshold(tr_session* session, int max_bad_requests);
     friend void tr_sessionSetCacheLimit_MB(tr_session* session, size_t mbytes);
+    friend void tr_sessionSetCompleteVerifyEnabled(tr_session* session, bool enabled);
     friend void tr_sessionSetDHTEnabled(tr_session* session, bool enabled);
     friend void tr_sessionSetDeleteSource(tr_session* session, bool delete_source);
     friend void tr_sessionSetEncryption(tr_session* session, tr_encryption_mode mode);

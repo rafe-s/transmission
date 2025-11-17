@@ -940,7 +940,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [stable, testing]
+        version: [stable, unstable]
     runs-on: ubuntu-latest
     container:
       image: debian:${{ matrix.version }}-slim

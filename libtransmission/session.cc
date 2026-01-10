@@ -655,7 +655,7 @@ size_t tr_session::count_queue_free_slots(tr_direction dir) const noexcept
     // count how many torrents are active
     auto active_count = size_t{};
     auto const stalled_enabled = queueStalledEnabled();
-    auto const stalled_if_idle_for_n_seconds = queueStalledMinutes() * 60;
+    auto const stalled_if_idle_for_n_seconds = static_cast<time_t>(queueStalledMinutes() * 60);
     auto const now = tr_time();
     for (auto const* const tor : torrents())
     {
@@ -767,6 +767,7 @@ void tr_session::setSettings(tr_variant const& settings, bool force)
     rpc_server_->load(tr_rpc_server::Settings{ settings });
 }
 
+// NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved): `std::swap()` also move from the parameter
 void tr_session::setSettings(tr_session::Settings&& settings_in, bool force)
 {
     auto const lock = unique_lock();
@@ -855,7 +856,7 @@ void tr_session::setSettings(tr_session::Settings&& settings_in, bool force)
         port_forwarding_->local_port_changed();
     }
 
-    if (!udp_core_ || force || port_changed || utp_changed)
+    if (!udp_core_ || force || addr_changed || port_changed || utp_changed)
     {
         udp_core_ = std::make_unique<tr_session::tr_udp_core>(*this, udpPort());
     }
@@ -2080,37 +2081,6 @@ size_t tr_sessionGetQueueStalledMinutes(tr_session const* session)
     TR_ASSERT(session != nullptr);
 
     return session->queueStalledMinutes();
-}
-
-// ---
-
-void tr_sessionSetAntiBruteForceThreshold(tr_session* session, int max_bad_requests)
-{
-    TR_ASSERT(session != nullptr);
-    TR_ASSERT(max_bad_requests > 0);
-
-    session->rpc_server_->set_anti_brute_force_limit(max_bad_requests);
-}
-
-int tr_sessionGetAntiBruteForceThreshold(tr_session const* session)
-{
-    TR_ASSERT(session != nullptr);
-
-    return session->rpc_server_->get_anti_brute_force_limit();
-}
-
-void tr_sessionSetAntiBruteForceEnabled(tr_session* session, bool is_enabled)
-{
-    TR_ASSERT(session != nullptr);
-
-    session->rpc_server_->set_anti_brute_force_enabled(is_enabled);
-}
-
-bool tr_sessionGetAntiBruteForceEnabled(tr_session const* session)
-{
-    TR_ASSERT(session != nullptr);
-
-    return session->rpc_server_->is_anti_brute_force_enabled();
 }
 
 // ---

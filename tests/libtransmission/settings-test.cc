@@ -112,14 +112,15 @@ TEST_F(SettingsTest, canLoadEncryptionMode)
 TEST_F(SettingsTest, canSaveEncryptionMode)
 {
     static auto constexpr Key = TR_KEY_encryption;
-    static auto constexpr ExpectedValue = TR_ENCRYPTION_REQUIRED;
+    static auto constexpr SourceValue = TR_ENCRYPTION_REQUIRED;
+    static auto constexpr ExpectedValue = "required"sv;
 
     auto settings = tr_session::Settings{};
-    EXPECT_NE(ExpectedValue, settings.seed_queue_enabled);
-    settings.encryption_mode = ExpectedValue;
+    EXPECT_NE(SourceValue, settings.seed_queue_enabled);
+    settings.encryption_mode = SourceValue;
 
     auto const map = settings.save();
-    auto const val = map.value_if<int64_t>(Key);
+    auto const val = map.value_if<std::string_view>(Key);
     ASSERT_TRUE(val);
     EXPECT_EQ(ExpectedValue, *val);
 }
@@ -389,11 +390,11 @@ TEST_F(SettingsTest, canSaveDiffServ)
     auto settings = tr_session::Settings{};
     ASSERT_NE(ChangedValue, settings.peer_socket_diffserv);
 
-    settings.peer_socket_diffserv = tr_diffserv_t(0x20);
+    settings.peer_socket_diffserv = ChangedValue;
     auto const map = settings.save();
     auto const val = map.value_if<std::string_view>(Key);
     ASSERT_TRUE(val);
-    EXPECT_EQ(ChangedValue.toString(), *val);
+    EXPECT_EQ("cs1"sv, *val);
 }
 
 TEST_F(SettingsTest, canLoadVerify)

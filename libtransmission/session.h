@@ -975,6 +975,18 @@ public:
         return settings().encryption_mode;
     }
 
+    [[nodiscard]] auto serialize_encryption_mode() const noexcept
+    {
+        auto var = libtransmission::serializer::to_variant(settings().encryption_mode);
+        TR_ASSERT(var.has_value());
+        return var;
+    }
+
+    bool deserialize_encryption_mode(tr_variant const& var) noexcept
+    {
+        return libtransmission::serializer::Converters::deserialize(var, &settings_.encryption_mode);
+    }
+
     [[nodiscard]] constexpr auto preallocationMode() const noexcept
     {
         return settings().preallocation_mode;
@@ -1069,6 +1081,26 @@ public:
         }
 
         return TR_RPC_OK;
+    }
+
+    [[nodiscard]] TR_CONSTEXPR23 auto get_anti_brute_force_limit() const noexcept
+    {
+        return rpc_server_->get_anti_brute_force_limit();
+    }
+
+    TR_CONSTEXPR23 void set_anti_brute_force_limit(size_t const limit) noexcept
+    {
+        rpc_server_->set_anti_brute_force_limit(limit);
+    }
+
+    [[nodiscard]] TR_CONSTEXPR23 auto is_anti_brute_force_enabled() const noexcept
+    {
+        return rpc_server_->is_anti_brute_force_enabled();
+    }
+
+    void set_anti_brute_force_enabled(bool const enabled) noexcept
+    {
+        rpc_server_->set_anti_brute_force_enabled(enabled);
     }
 
     [[nodiscard]] size_t count_queue_free_slots(tr_direction dir) const noexcept;
@@ -1226,7 +1258,6 @@ private:
     friend class libtransmission::test::SessionTest;
 
     friend bool tr_blocklistExists(tr_session const* session);
-    friend bool tr_sessionGetAntiBruteForceEnabled(tr_session const* session);
     friend bool tr_sessionIsPortForwardingEnabled(tr_session const* session);
     friend bool tr_sessionIsRPCEnabled(tr_session const* session);
     friend bool tr_sessionIsRPCPasswordEnabled(tr_session const* session);
@@ -1235,7 +1266,6 @@ private:
     friend char const* tr_sessionGetRPCPassword(tr_session const* session);
     friend char const* tr_sessionGetRPCUsername(tr_session const* session);
     friend char const* tr_sessionGetRPCWhitelist(tr_session const* session);
-    friend int tr_sessionGetAntiBruteForceThreshold(tr_session const* session);
     friend size_t tr_blocklistGetRuleCount(tr_session const* session);
     friend size_t tr_blocklistSetContent(tr_session* session, char const* content_filename);
     friend size_t tr_sessionGetAltSpeedBegin(tr_session const* session);
@@ -1261,8 +1291,6 @@ private:
     friend void tr_sessionSetAltSpeedEnd(tr_session* session, size_t minutes_since_midnight);
     friend void tr_sessionSetAltSpeedFunc(tr_session* session, tr_altSpeedFunc func, void* user_data);
     friend void tr_sessionSetAltSpeed_KBps(tr_session* session, tr_direction dir, size_t limit_kbyps);
-    friend void tr_sessionSetAntiBruteForceEnabled(tr_session* session, bool is_enabled);
-    friend void tr_sessionSetAntiBruteForceThreshold(tr_session* session, int max_bad_requests);
     friend void tr_sessionSetCacheLimit_MB(tr_session* session, size_t mbytes);
     friend void tr_sessionSetCompleteVerifyEnabled(tr_session* session, bool enabled);
     friend void tr_sessionSetDHTEnabled(tr_session* session, bool enabled);
@@ -1298,7 +1326,14 @@ private:
 public:
     /// constexpr fields
 
-    static constexpr std::array<std::tuple<tr_quark, tr_quark, TrScript>, 3> Scripts{ {
+    struct ScriptInfo
+    {
+        tr_quark enabled_key;
+        tr_quark filename_key;
+        TrScript script;
+    };
+
+    static constexpr std::array<ScriptInfo, 3U> Scripts{ {
         { TR_KEY_script_torrent_added_enabled, TR_KEY_script_torrent_added_filename, TR_SCRIPT_ON_TORRENT_ADDED },
         { TR_KEY_script_torrent_done_enabled, TR_KEY_script_torrent_done_filename, TR_SCRIPT_ON_TORRENT_DONE },
         { TR_KEY_script_torrent_done_seeding_enabled,

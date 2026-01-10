@@ -103,7 +103,7 @@ std::array<Prefs::PrefItem, Prefs::PREFS_COUNT> const Prefs::Items{
     { SESSION_REMOTE_PORT, TR_KEY_remote_session_port, QMetaType::Int },
     { SESSION_REMOTE_AUTH, TR_KEY_remote_session_requires_authentication, QMetaType::Bool },
     { SESSION_REMOTE_USERNAME, TR_KEY_remote_session_username, QMetaType::QString },
-    { SESSION_REMOTE_RPC_URL_PATH, TR_KEY_remote_session_rpc_url_path, QMetaType::QString },
+    { SESSION_REMOTE_URL_BASE_PATH, TR_KEY_remote_session_url_base_path, QMetaType::QString },
     { COMPLETE_SOUND_COMMAND, TR_KEY_torrent_complete_sound_command, QMetaType::QStringList },
     { COMPLETE_SOUND_ENABLED, TR_KEY_torrent_complete_sound_enabled, QMetaType::Bool },
     { READ_CLIPBOARD, TR_KEY_read_clipboard, QMetaType::Bool },
@@ -124,7 +124,7 @@ std::array<Prefs::PrefItem, Prefs::PREFS_COUNT> const Prefs::Items{
     { DOWNLOAD_DIR, TR_KEY_download_dir, QMetaType::QString },
     { DOWNLOAD_QUEUE_ENABLED, TR_KEY_download_queue_enabled, QMetaType::Bool },
     { DOWNLOAD_QUEUE_SIZE, TR_KEY_download_queue_size, QMetaType::Int },
-    { ENCRYPTION, TR_KEY_encryption, QMetaType::Int },
+    { ENCRYPTION, TR_KEY_encryption, CustomVariantType::EncryptionModeType },
     { IDLE_LIMIT, TR_KEY_idle_seeding_limit, QMetaType::Int },
     { IDLE_LIMIT_ENABLED, TR_KEY_idle_seeding_limit_enabled, QMetaType::Bool },
     { INCOMPLETE_DIR, TR_KEY_incomplete_dir, QMetaType::QString },
@@ -167,24 +167,6 @@ std::array<Prefs::PrefItem, Prefs::PREFS_COUNT> const Prefs::Items{
 
 namespace
 {
-bool isValidUtf8(QByteArray const& byteArray)
-{
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-
-    auto decoder = QStringDecoder{ QStringConverter::Utf8, QStringConverter::Flag::Stateless };
-    auto const text = QString{ decoder.decode(byteArray) };
-    return !decoder.hasError() && !text.contains(QChar::ReplacementCharacter);
-
-#else
-
-    auto const* const codec = QTextCodec::codecForName("UTF-8");
-    auto state = QTextCodec::ConverterState{};
-    codec->toUnicode(byteArray.constData(), byteArray.size(), &state);
-    return state.invalidChars == 0;
-
-#endif
-}
-
 [[nodiscard]] constexpr auto prefIsSavable(int pref)
 {
     switch (pref)
@@ -231,6 +213,13 @@ Prefs::Prefs(QString config_dir)
             if (auto const value = getValue<int64_t>(b); value)
             {
                 values_[i].setValue(*value);
+            }
+            break;
+
+        case CustomVariantType::EncryptionModeType:
+            if (auto const val = to_value<tr_encryption_mode>(*b))
+            {
+                values_[i] = QVariant::fromValue(*val);
             }
             break;
 
@@ -312,6 +301,10 @@ Prefs::~Prefs()
             dictAdd(&current_settings, key, val.toInt());
             break;
 
+        case CustomVariantType::EncryptionModeType:
+            *tr_variantDictAdd(&current_settings, key) = to_variant(val.value<tr_encryption_mode>());
+            break;
+
         case CustomVariantType::SortModeType:
             *tr_variantDictAdd(&current_settings, key) = to_variant(val.value<SortMode>());
             break;
@@ -390,7 +383,7 @@ tr_variant Prefs::get_default_app_settings()
     settings.try_emplace(TR_KEY_remote_session_password, tr_variant::unmanaged_string(""sv));
     settings.try_emplace(TR_KEY_remote_session_port, TrDefaultRpcPort);
     settings.try_emplace(TR_KEY_remote_session_requires_authentication, false);
-    settings.try_emplace(TR_KEY_remote_session_rpc_url_path, tr_variant::unmanaged_string(TR_DEFAULT_RPC_URL_STR "rpc"));
+    settings.try_emplace(TR_KEY_remote_session_url_base_path, tr_variant::unmanaged_string(TrHttpServerDefaultBasePath));
     settings.try_emplace(TR_KEY_remote_session_username, tr_variant::unmanaged_string(""sv));
     settings.try_emplace(TR_KEY_show_backup_trackers, false);
     settings.try_emplace(TR_KEY_show_filterbar, true);
@@ -409,51 +402,4 @@ tr_variant Prefs::get_default_app_settings()
     settings.try_emplace(TR_KEY_watch_dir, download_dir);
     settings.try_emplace(TR_KEY_watch_dir_enabled, false);
     return tr_variant{ std::move(settings) };
-}
-
-/***
-****
-***/
-
-bool Prefs::getBool(int key) const
-{
-    assert(Items[key].type == QMetaType::Bool);
-    return values_[key].toBool();
-}
-
-QString Prefs::getString(int key) const
-{
-    assert(Items[key].type == QMetaType::QString);
-
-    if (auto const b = values_[key].toByteArray(); isValidUtf8(b.constData()))
-    {
-        values_[key].setValue(QString::fromUtf8(b.constData()));
-    }
-
-    return values_[key].toString();
-}
-
-int Prefs::getInt(int key) const
-{
-    assert(Items[key].type == QMetaType::Int);
-    return values_[key].toInt();
-}
-
-double Prefs::getDouble(int key) const
-{
-    assert(Items[key].type == QMetaType::Double);
-    return values_[key].toDouble();
-}
-
-QDateTime Prefs::getDateTime(int key) const
-{
-    assert(Items[key].type == QMetaType::QDateTime);
-    return values_[key].toDateTime();
-}
-
-// ---
-
-void Prefs::toggleBool(int key)
-{
-    set(key, !getBool(key));
 }

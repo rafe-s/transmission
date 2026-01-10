@@ -242,6 +242,17 @@ private:
 
     // ---
 
+    TR_CONSTEXPR20 void client_got_block(tr_block_index_t block)
+    {
+        if (auto const iter = find_by_block(block); iter != std::end(candidates_))
+        {
+            iter->unrequested.erase(block);
+            resort_piece(iter);
+        }
+    }
+
+    // ---
+
     TR_CONSTEXPR20 void peer_disconnect(tr_bitfield const& have, tr_bitfield const& requests)
     {
         dec_replication_bitfield(have);
@@ -259,30 +270,29 @@ private:
         }
         TR_ASSERT(std::empty(iter->unrequested));
 
+        iter->block_span = iter->raw_block_span;
         if (piece > 0U)
         {
             if (auto const prev = find_by_piece(piece - 1U); prev != std::end(candidates_))
             {
-                iter->block_span.begin = std::max(iter->raw_block_span.begin, prev->block_span.end);
+                iter->block_span.begin = std::max(iter->block_span.begin, prev->block_span.end);
                 TR_ASSERT(iter->block_span.begin == prev->block_span.end);
                 for (tr_block_index_t i = iter->block_span.begin; i > iter->raw_block_span.begin; --i)
                 {
                     prev->unrequested.insert(i - 1U);
                 }
-                resort_piece(prev);
             }
         }
         if (piece < mediator_.piece_count() - 1U)
         {
             if (auto const next = find_by_piece(piece + 1U); next != std::end(candidates_))
             {
-                iter->block_span.end = std::min(iter->raw_block_span.end, next->block_span.begin);
+                iter->block_span.end = std::min(iter->block_span.end, next->block_span.begin);
                 TR_ASSERT(iter->block_span.end == next->block_span.begin);
                 for (tr_block_index_t i = iter->raw_block_span.end; i > iter->block_span.end; --i)
                 {
                     next->unrequested.insert(i - 1U);
                 }
-                resort_piece(next);
             }
         }
 
@@ -290,7 +300,8 @@ private:
         {
             iter->unrequested.insert(i - 1U);
         }
-        resort_piece(iter);
+
+        std::sort(std::begin(candidates_), std::end(candidates_));
     }
 
     // ---
@@ -517,7 +528,7 @@ private:
 
     CandidateVec candidates_;
 
-    std::array<libtransmission::ObserverTag, 14U> const tags_;
+    std::array<libtransmission::ObserverTag, 15U> const tags_;
 
     Mediator& mediator_;
 };
@@ -534,6 +545,8 @@ Wishlist::Impl::Impl(Mediator& mediator_in)
           mediator_in.observe_got_bad_piece([this](tr_torrent*, tr_piece_index_t p) { got_bad_piece(p); }),
           // replication
           mediator_in.observe_got_bitfield([this](tr_torrent*, tr_bitfield const& b) { inc_replication_bitfield(b); }),
+          // unrequested
+          mediator_in.observe_got_block([this](tr_torrent*, tr_block_index_t b) { client_got_block(b); }),
           // unrequested
           mediator_in.observe_got_choke([this](tr_torrent*, tr_bitfield const& b) { reset_blocks_bitfield(b); }),
           // replication

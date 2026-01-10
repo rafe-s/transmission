@@ -398,6 +398,8 @@ public:
             libtransmission::SimpleObservable<tr_torrent*, tr_piece_index_t>::Observer observer) override;
         [[nodiscard]] libtransmission::ObserverTag observe_got_bitfield(
             libtransmission::SimpleObservable<tr_torrent*, tr_bitfield const&>::Observer observer) override;
+        [[nodiscard]] libtransmission::ObserverTag observe_got_block(
+            libtransmission::SimpleObservable<tr_torrent*, tr_block_index_t>::Observer observer) override;
         [[nodiscard]] libtransmission::ObserverTag observe_got_choke(
             libtransmission::SimpleObservable<tr_torrent*, tr_bitfield const&>::Observer observer) override;
         [[nodiscard]] libtransmission::ObserverTag observe_got_have(
@@ -667,6 +669,7 @@ public:
     libtransmission::SimpleObservable<tr_torrent*, tr_bitfield const& /*bitfield*/, tr_bitfield const& /*active requests*/>
         peer_disconnect;
     libtransmission::SimpleObservable<tr_torrent*, tr_bitfield const&> got_bitfield;
+    libtransmission::SimpleObservable<tr_torrent*, tr_block_index_t> got_block;
     libtransmission::SimpleObservable<tr_torrent*, tr_bitfield const&> got_choke;
     libtransmission::SimpleObservable<tr_torrent*, tr_piece_index_t> got_have;
     libtransmission::SimpleObservable<tr_torrent*> got_have_all;
@@ -905,9 +908,9 @@ private:
                 s->cancel_all_requests_for_block(loc.block, peer);
                 peer->blocks_sent_to_client.add(tr_time(), 1);
                 peer->blame.set(loc.piece);
+                s->got_block.emit(tor, loc.block); // put this line before calling tr_torrent callback
                 tor->on_block_received(loc.block);
             }
-
             break;
 
         default:
@@ -1072,6 +1075,12 @@ libtransmission::ObserverTag tr_swarm::WishlistMediator::observe_got_bitfield(
     libtransmission::SimpleObservable<tr_torrent*, tr_bitfield const&>::Observer observer)
 {
     return swarm_.got_bitfield.observe(std::move(observer));
+}
+
+libtransmission::ObserverTag tr_swarm::WishlistMediator::observe_got_block(
+    libtransmission::SimpleObservable<tr_torrent*, tr_block_index_t>::Observer observer)
+{
+    return swarm_.got_block.observe(std::move(observer));
 }
 
 libtransmission::ObserverTag tr_swarm::WishlistMediator::observe_got_choke(
@@ -1461,6 +1470,7 @@ void tr_peerMgrAddIncoming(tr_peerMgr* manager, tr_peer_socket&& socket)
     }
 }
 
+// TODO(C++20): convert to std::span
 size_t tr_peerMgrAddPex(tr_torrent* tor, tr_peer_from from, tr_pex const* pex, size_t n_pex)
 {
     size_t n_used = 0;
@@ -1481,6 +1491,7 @@ size_t tr_peerMgrAddPex(tr_torrent* tor, tr_peer_from from, tr_pex const* pex, s
     return n_used;
 }
 
+// TODO(C++20): convert to std::span
 std::vector<tr_pex> tr_pex::from_compact_ipv4(
     void const* compact,
     size_t compact_len,
@@ -1504,6 +1515,7 @@ std::vector<tr_pex> tr_pex::from_compact_ipv4(
     return pex;
 }
 
+// TODO(C++20): convert to std::span
 std::vector<tr_pex> tr_pex::from_compact_ipv6(
     void const* compact,
     size_t compact_len,
